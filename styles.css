@@ -1,0 +1,261 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    color: white;
+    font-family: 'Press Start 2P';
+}
+
+body {
+    background-color: black;
+    height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 80vh 1fr;
+    grid-template-rows: auto;
+    grid-template-areas: 
+        "header header header"
+        "leaderboard main score"
+        "leaderboard main controls"
+    ;
+    align-items: center;
+    justify-items: center;
+}
+
+.title {
+    grid-area: header;
+    text-align: center;
+
+    & > h1 {
+        font-size: 4em;
+    }
+}
+
+.notificationContainer {
+    position: absolute;
+    display: flex;
+    height: 100vh;
+    align-items: center;
+    justify-content: center;
+
+    & > .multipurposeButton {
+        background-color: #4b4b4b;
+        z-index: 100;
+        cursor: pointer;
+        border-radius: 20px;
+        padding: 20px 30px;
+        display: flex;
+        border: none;
+
+        &.hidden {
+            display: none;
+        }
+
+        & > .logo {
+            height: 32px;
+            width: 32px;
+            aspect-ratio: 1/1;
+        }
+
+        & > .text {
+            text-shadow: 2px 2px 2px #000;
+            font-size: 2em;
+            text-decoration: none;
+            margin-left: 10px;
+            height: 32px;
+        }
+    }
+}
+
+#maze {
+    grid-area: main;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 10%);
+    width: 80vh;
+    height: 80vh;
+    align-items: center;
+    justify-items: center;
+}
+
+/* Lives styling */
+.lives {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: auto;
+    display: flex;
+    align-items: center;
+    margin: 0.5em;
+
+    & > ul {
+        display: flex;
+
+        & > li {
+            list-style: none;
+            background-color: red;
+            width: 2em;
+            height: 2em;
+            border-radius: 100%;
+            margin: 5px;
+        
+            &.expended {
+                background-color: lightgray;
+            }
+        }
+    }
+}
+
+.score {
+    grid-area: score;
+}
+
+.leaderboard {
+    grid-area: leaderboard;
+
+    & > ol {
+        margin-left: 2.5em;
+        margin-top: 1em;
+        text-align: left;
+
+        & > li {
+            font-size: 0.85em;
+            padding: 1em 0;
+        }
+    }
+}
+
+div {
+    height: 100%;
+    text-align: center;
+
+    h1 {
+        font-size: 1.25em;
+        text-decoration: underline;
+    }
+
+    p {
+        margin: 0.5em;
+        font-size: 2em;
+    }
+}
+
+.block  {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    aspect-ratio: 1/1;
+
+    &.player {
+        z-index: 2;
+        top: 0;
+        left: 0;
+        transition-property: top, left;
+        transition-duration: 400ms;
+        border-radius: 1000px;
+        
+        &.faceUp {
+            transform: rotate(270deg);
+        }
+
+        &.faceDown {
+            transform: rotate(90deg);
+        }
+
+        &.faceLeft {
+            transform: rotate(180deg);
+        }
+
+        &.faceRight {
+            transform: rotate(0deg);
+        }
+
+        &.dead {
+            animation: deathAnimation 1.5s ease-in-out forwards;
+        }
+        
+        &.hit {
+            animation: hitAnimation 1.5s ease-in-out;
+        }
+    }
+
+    &.point {
+        border-radius: 100%;
+        background-color: white;
+        height: 1vh;
+        width: 1vh;
+        z-index: 0;
+
+        &.obtained {
+            opacity: 0%;
+        }
+    }
+    
+    &.enemy {
+        z-index: 1;
+    }
+
+    &.wall {
+        background-color: blue;
+        z-index: 3;
+    }
+}
+
+.controls {
+    grid-area: controls;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    grid-template-areas: 
+        ". upArrow ."
+        "leftArrow . rightArrow"
+        ". downArrow ."
+    ;
+    width: 25vh;
+    height: 25vh;
+
+    & > .directionalButton {
+        background-color: rgb(10, 10, 10);
+    
+        &:nth-child(1) { 
+            grid-area: leftArrow; 
+        }
+    
+        &:nth-child(2) {
+            grid-area: upArrow;
+        }
+    
+        &:nth-child(3) {
+            grid-area: rightArrow;
+        }
+    
+        &:nth-child(4) {
+            grid-area: downArrow;
+        }
+    }
+}
+
+@keyframes deathAnimation {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(0.5);
+    }
+
+    100% {
+        transform: scale(0);
+    }
+}
+
+@keyframes hitAnimation {
+    0%, 100% {
+        background-color: #ffcc00;
+        transform: scale(1);
+    }
+
+    50% {
+        color: #ff0000;
+        transform: scale(0.75);
+    }
+}

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <link rel="stylesheet" href="styles.css">
+        <link rel="shortcut icon" href="images/mouthOpen.png" type="image/x-icon">
+
+        <title>AS2 | Snack Man!</title>
+    </head>
+    <body>
+        <header class="title">
+            <h1>Snack Man!</h1>
+        </header>
+
+        <div class="notificationContainer">
+            <button class="multipurposeButton" id="multipurposeButton">
+                <img class="logo" src="images/mouthOpen.png" alt="Snack Man Logo">
+                <h1 class="text" id="multipurposeText">Start</h1>
+            </button>
+        </div>
+
+        <div class="leaderboard">
+            <h1>LeaderBoard:</h1>
+            <ol>
+                <li>Chris........100</li>
+                <li>Mark.........75</li>
+                <li>Tom..........50</li>
+                <li>John.........45</li>
+                <li>John2........40</li>
+                <li>John3........35</li>
+            </ol>
+        </div>
+
+        <main id="maze">
+        </main>
+
+        <div class="lives">
+            <h1>Lives:</h1>
+            <ul id="lives"></ul>
+        </div>
+
+        <div class="score">
+            <h1>Score:</h1>
+            <p id="score">0</p>
+        </div>
+
+        <div class="controls">
+            <button class="directionalButton" id="leftButton">&#9664;</button>
+            <button class="directionalButton" id="upButton">&#9650;</button>
+            <button class="directionalButton" id="rightButton">&#9654;</button>
+            <button class="directionalButton" id="downButton">&#9660;</button>
+        </div>
+
+        <!-- move this after all the content so it gets loaded last -->
+        <script src="script.js"></script>
+    </body>
+</html>
