@@ -5,7 +5,6 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         
         <link rel="stylesheet" href="styles.css">
-        <link rel="shortcut icon" href="images/mouthOpen.png" type="image/x-icon">
 
         <title>AS2 | Snack Man!</title>
     </head>
@@ -15,10 +14,30 @@
         </header>
 
         <div class="notificationContainer">
-            <button class="multipurposeButton" id="multipurposeButton">
-                <img class="logo" src="images/mouthOpen.png" alt="Snack Man Logo">
-                <h1 class="text" id="multipurposeButtonText">Start</h1>
-            </button>
+            <div class="startButton" id="startButtonRoot">
+                <div class="logo"></div>
+                <div>
+                    <button id="startButton"><h1>Start!</h1></button>
+                </div>
+            </div>
+            
+            <div class="restartButton hidden" id="restartButtonRoot">
+                <div class="logo"></div>
+                <div>
+                    <button id="restartButton"><h1>Restart?</h1></button>
+                </div>
+            </div>
+
+            <div class="nextLevelButton hidden" id="continueOrFinishButtonRoot">
+                <div class="logo"></div>
+                <div>
+                    <button id="continuePlayingButton"><h1>Next Level?</h1></button>
+
+                    <div class="or">OR</div>
+
+                    <button id="finishAndSaveButton"><h1>Finish & Save Score?</h1></button>
+                </div>
+            </div>
         </div>
 
         <div class="leaderboard">
@@ -46,11 +65,17 @@
             <p id="score">0</p>
         </div>
 
+        <div class="level">
+            <h1>Level:</h1>
+            <p id="level">1</p>
+        </div>
+
         <div class="controls">
-            <button class="directionalButton" id="leftButton">&#9664;</button>
-            <button class="directionalButton" id="upButton">&#9650;</button>
-            <button class="directionalButton" id="rightButton">&#9654;</button>
-            <button class="directionalButton" id="downButton">&#9660;</button>
+            <button id="upButton">▲</button>
+            <button id="downButton">▼</button>
+            <button id="leftButton">◀</button>
+            <button id="rightButton">▶</button>
+            <div class="middle"></div>
         </div>
 
         <!-- move this after all the content so it gets loaded last -->

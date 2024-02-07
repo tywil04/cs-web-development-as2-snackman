@@ -17,175 +17,219 @@ class SnackmanGame {
     downButtonElement
     leftButtonElement
     rightButtonElement
-    multipurposeButtonElement
-    multipurposeButtonTextElement
+    startButtonRootElement
+    startButtonElement
+    restartButtonRootElement
+    restartButtonElement
+    continueOrFinishButtonRootElement
+    continuePlayingButtonElement
+    finishAndSaveButtonElement
     scoreElement
     livesElement
+    levelElement
 
-    currentMaze = []
-    currentMazeMaxPoints = 0
+    pointElements = []
+    lifeElements = {}
+    enemyElements = []
 
     playerDiscreteStartingPosition = [0, 0] // row, col
     playerDiscretePosition = [0, 0] // row, col
-
-    playerMovingDuration = 400 // ms
+    playerMovingDuration = 500 // ms
     playerMoving = false
-    
-    playerImmobileDuration = 1500 // ms
-    playerImmobile = false 
-
-    playerStartingScore = 0
-    playerScore = 0
-
+    playerInvincibleDuration = 1500 // ms
+    playerInvincible = false
     playerStartingLives = 3
     playerLives = 0
+    playerLevel = 1
+    playerScore = 0
+    playerTotalScore = 0
 
-    playerWasHitAndHasNotMovedSince = false
+    enemiesMovingDuration = 500 // ms
+    enemiesMoving = false
 
-    blockSizeInPixels
-
-    multipurposeButtonState = "start"
+    mazeStartingSize = 10
+    mazeStartingNumberOfEnemies = 1
+    mazeSize = 0
+    mazeNumberOfEnemies = 0
+    mazeMaxPoints
+    maze 
 
     // holds the interval for tick
-    animationTickInterval
-    animationTickSpeed = 400 // ms
     gameTickInterval
-    gameTickSpeed = 1 // ms
+    gameTickSpeed = 10 // ms
 
-    constructor(elements) {
+    blockSizeInPixels
+    started 
+
+    constructor() {
         this.mazeElement = document.getElementById("maze")
         this.upButtonElement = document.getElementById("upButton")
         this.downButtonElement = document.getElementById("downButton")
         this.leftButtonElement = document.getElementById("leftButton")
         this.rightButtonElement = document.getElementById("rightButton")
-        this.multipurposeButtonElement = document.getElementById("multipurposeButton")
-        this.multipurposeButtonTextElement = document.getElementById("multipurposeButtonText")
+        this.startButtonRootElement = document.getElementById("startButtonRoot")
+        this.startButtonElement = document.getElementById("startButton")
+        this.restartButtonRootElement = document.getElementById("restartButtonRoot")
+        this.restartButtonElement = document.getElementById("restartButton")
+        this.continueOrFinishButtonRootElement = document.getElementById("continueOrFinishButtonRoot")
+        this.continuePlayingButtonElement = document.getElementById("continuePlayingButton")
+        this.finishAndSaveButtonElement = document.getElementById("finishAndSaveButton")
         this.scoreElement = document.getElementById("score")
         this.livesElement = document.getElementById("lives")
+        this.levelElement = document.getElementById("level")
 
         // .bind(this) ensures the context for `this` is correct
         // javascript is weird
         document.addEventListener("keyup", this.eventHandleKeyUp.bind(this))
         document.addEventListener("keydown", this.eventHandleKeyDown.bind(this))
-
         this.upButtonElement.addEventListener("click", this.eventHandleUpButtonClick.bind(this))
         this.downButtonElement.addEventListener("click", this.eventHandleDownButtonClick.bind(this))
         this.leftButtonElement.addEventListener("click", this.eventHandleLeftButtonClick.bind(this))
         this.rightButtonElement.addEventListener("click", this.eventHandleRightButtonClick.bind(this))
-        this.multipurposeButtonElement.addEventListener("click", this.eventHandleMultipurposeButtonClick.bind(this))
+        this.startButtonElement.addEventListener("click", this.eventHandleStartButtonClick.bind(this))
+        this.restartButtonElement.addEventListener("click", this.eventHandleRestartButtonClick.bind(this))
+        this.continuePlayingButtonElement.addEventListener("click", this.eventHandleContinuePlayingButtonClick.bind(this))
+        this.finishAndSaveButtonElement.addEventListener("click", this.eventHandleFinishAndSaveButtonClick.bind(this))
+
+        this.playerScore = 0
+        this.playerLives = this.playerStartingLives
+        this.mazeSize = this.mazeStartingSize
+        this.mazeNumberOfEnemies = this.mazeStartingNumberOfEnemies
 
         this.generateMaze()
         this.buildMazeInHTML()
-
-        this.playerScore = this.playerStartingScore
-        this.playerLives = this.playerStartingLives
-
-        for (let i = this.playerLives; i > 0; i--) {
-            const li = document.createElement("li")
-            li.id = `life:${i}`
-            this.livesElement.appendChild(li)
-        }
+        this.buildLivesInHTML()
 
         // get the float width of a block
         this.blockSizeInPixels = this.mazeElement.children[0].getBoundingClientRect().width
     }
 
-    eventHandleMultipurposeButtonClick() {
-        switch (this.multipurposeButtonState) {
-            case "start": {
-                this.startGame()
-                this.multipurposeButtonElement.classList.add("hidden")
-                break
-            }
-            case "restart": {
-                this.resetGame()
-                this.startGame()
-                this.multipurposeButtonElement.classList.add("hidden")
-                break
-            }
-        }
-    }
-
     eventHandleKeyDown(event) {
-        switch (event.key) {
-            case "ArrowUp": 
-            case "w":
-                this.upKeyActive = true
-                this.downKeyActive = false 
-                this.leftKeyActive = false 
-                this.rightKeyActive = false
-                break
-            case "ArrowDown":
-            case "s":
-                this.downKeyActive = true
-                this.upKeyActive = false 
-                this.leftKeyActive = false 
-                this.rightKeyActive = false
-                break
-            case "ArrowLeft": 
-            case "a":
-                this.leftKeyActive = true
-                this.upKeyActive = false 
-                this.downKeyActive = false 
-                this.rightKeyActive = false 
-                break
-            case "ArrowRight":
-            case "d":
-                this.rightKeyActive = true
-                this.upKeyActive = false 
-                this.downKeyActive = false 
-                this.leftKeyActive = false
-                break
+        if (this.started) {
+            // only accept inputs when game has started
+            this.upKeyActive = event.key === "ArrowUp" || event.key === "w"
+            this.downKeyActive = event.key === "ArrowDown" || event.key === "s"
+            this.leftKeyActive = event.key === "ArrowLeft" || event.key === "a"
+            this.rightKeyActive = event.key === "ArrowRight" || event.key === "d"
+
+            if (this.upKeyActive || this.downKeyActive || this.leftKeyActive || this.rightKeyActive) {
+                // the key pressed was from WASD keys or Arrow Keys so cancel onscreen buttons
+                this.upButtonActive = false 
+                this.downButtonActive = false
+                this.leftButtonActive = false 
+                this.rightButtonActive = false
+                this.upButtonElement.dataset.pressed = "false"
+                this.downButtonElement.dataset.pressed = "false"
+                this.leftButtonElement.dataset.pressed = "false"
+                this.rightButtonElement.dataset.pressed = "false"
+            }
         }
     }
 
     eventHandleKeyUp(event) {
-        switch (event.key) {
-            case "ArrowUp": 
-            case "w":
-                this.upKeyActive = false
-                break
-            case "ArrowDown":
-            case "s":
-                this.downKeyActive = false
-                break
-            case "ArrowLeft": 
-            case "a":
-                this.leftKeyActive = false
-                break
-            case "ArrowRight":
-            case "d":
-                this.rightKeyActive = false
-                break
+        if (this.started) {
+            // if the key then set value to false, otherwise set it to itself to preserve its value
+            this.upKeyActive = (event.key === "ArrowUp" || event.key === "w") ? false: this.upKeyActive
+            this.downKeyActive = (event.key === "ArrowDown" || event.key === "s") ? false: this.downKeyActive
+            this.leftKeyActive = (event.key === "ArrowLeft" || event.key === "a") ? false: this.leftKeyActive
+            this.rightKeyActive = (event.key === "ArrowRight" || event.key === "d") ? false: this.rightKeyActive 
         }
     }
 
-    eventHandleUpButtonClick(event) {
-        this.upButtonActive = !this.upButtonActive
-        this.downButtonActive = false 
-        this.leftButtonActive = false 
-        this.rightButtonActive = false
+    eventHandleUpButtonClick() {
+        if (this.started) {
+            // only accept inputs when game has started
+            this.upButtonActive = !this.upButtonActive
+            this.downButtonActive = false 
+            this.leftButtonActive = false 
+            this.rightButtonActive = false
+            this.upButtonElement.dataset.pressed = this.upButtonActive
+            this.downButtonElement.dataset.pressed = "false"
+            this.leftButtonElement.dataset.pressed = "false"
+            this.rightButtonElement.dataset.pressed = "false"
+        }
     }
 
-    eventHandleDownButtonClick(event) {
-        this.downButtonActive = !this.downButtonActive
-        this.upButtonActive = false 
-        this.leftButtonActive = false 
-        this.rightButtonActive = false
+    eventHandleDownButtonClick() {
+        if (this.started) {
+            // only accept inputs when game has started
+            this.downButtonActive = !this.downButtonActive
+            this.upButtonActive = false 
+            this.leftButtonActive = false 
+            this.rightButtonActive = false
+            this.downButtonElement.dataset.pressed = this.downButtonActive
+            this.upButtonElement.dataset.pressed = "false"
+            this.leftButtonElement.dataset.pressed = "false"
+            this.rightButtonElement.dataset.pressed = "false"
+        }
     }
 
-    eventHandleLeftButtonClick(event) {
-        this.leftButtonActive = !this.leftButtonActive
-        this.upButtonActive = false 
-        this.downButtonActive = false 
-        this.rightButtonActive = false
+    eventHandleLeftButtonClick() {
+        if (this.started) {
+            // only accept inputs when game has started
+            this.leftButtonActive = !this.leftButtonActive
+            this.upButtonActive = false 
+            this.downButtonActive = false 
+            this.rightButtonActive = false
+            this.leftButtonElement.dataset.pressed = this.leftButtonActive
+            this.upButtonElement.dataset.pressed = "false"
+            this.downButtonElement.dataset.pressed = "false"
+            this.rightButtonElement.dataset.pressed = "false"
+        }
     }
 
-    eventHandleRightButtonClick(event) {
-        this.rightButtonActive = !this.rightButtonActive
-        this.upButtonActive = false 
-        this.downButtonActive = false 
-        this.leftButtonActive = false
+    eventHandleRightButtonClick() {
+        if (this.started) {
+            // only accept inputs when game has started
+            this.rightButtonActive = !this.rightButtonActive
+            this.upButtonActive = false 
+            this.downButtonActive = false 
+            this.leftButtonActive = false
+            this.rightButtonElement.dataset.pressed = this.rightButtonActive
+            this.upButtonElement.dataset.pressed = "false"
+            this.downButtonElement.dataset.pressed = "false"
+            this.leftButtonElement.dataset.pressed = "false"
+        }
+    }
+
+    eventHandleStartButtonClick() {
+        this.startGame()
+        this.startButtonRootElement.classList.add("hidden")
+    }
+
+    eventHandleRestartButtonClick() {
+        this.resetGame()
+        this.startGame()
+        this.restartButtonRootElement.classList.add("hidden")
+    }
+
+    eventHandleContinuePlayingButtonClick() {
+        this.playerLevel++
+        this.levelElement.innerText = this.playerLevel
+
+        let moreEnemeies = (this.maze.length * this.maze.length) * 0.3 > this.mazeNumberOfEnemies
+
+        if ((this.playerLevel % 3) === 0) {
+            // is a multiple of 3
+            this.mazeSize += 2
+            this.mazeNumberOfEnemies = Math.floor(this.mazeNumberOfEnemies * 1.5)
+        }
+
+        if (moreEnemeies) {
+            this.mazeNumberOfEnemies++
+        }
+
+        this.resetGame(false)
+        this.startGame()
+        this.continueOrFinishButtonRootElement.classList.add("hidden")
+    }
+
+    eventHandleFinishAndSaveButtonClick() {
+        console.log(this.playerScore)
+        console.log(this.playerLevel)
+        this.resetGame()
+        this.continueOrFinishButtonRootElement.classList.add("hidden")
+        this.startButtonRootElement.classList.remove("hidden")
     }
 
     // includes max
@@ -194,127 +238,115 @@ class SnackmanGame {
     }
 
     // wall = 0, point = 1, enemy = 2, player = 3
-    generateMaze(size=10, numberOfEnemies=2) {
-        this.currentMaze = []
-        this.currentMazeMaxPoints = 0
+    generateMaze() {
+        this.maze = []
+        this.mazeMaxPoints = 0
 
-        let numberOfWalls = this.randomInt(size / 2, size * 1.5) // between 0 and size walls
+        let numberOfWalls = this.randomInt(
+            this.mazeSize * Math.floor((this.playerLevel / 6) + 1), 
+            this.mazeSize * 1.5 * (Math.floor(this.playerLevel / 3) + 1),
+        )
         let maze = []
 
-        for (let row = 0; row < size; row++) {
+        for (let row = 0; row < this.mazeSize; row++) {
             let rowBlocks = []
-
-            switch (row) {
-                case 0:
-                case size - 1: {
-                    // first and last row should be all walls
-                    for (let i = 0; i < size; i++) {
-                        rowBlocks.push(0)
-                    }
-                    break
+            if (row === 0 || row === this.mazeSize - 1) {
+                // first and last row should be all walls
+                for (let i = 0; i < this.mazeSize; i++) {
+                    rowBlocks.push(0)
                 }
-                default: {
-                    for (let col = 0; col < size; col++) {
-                        switch (col) {
-                            case 0:
-                            case size - 1: {
-                                // first and last column should be all walls
-                                rowBlocks.push(0)
-                                break
-                            }
-                            default: {
-                                rowBlocks.push(1)
-                            }
-                        }
+            } else {
+                for (let col = 0; col < this.mazeSize; col++) {
+                    if (col === 0 || col === this.mazeSize - 1) {
+                        // first and last column should be all walls
+                        rowBlocks.push(0)
+                    } else {
+                        rowBlocks.push(1)
                     }
-                    break
                 }
             }
-
             maze[row] = rowBlocks
         }
 
         for (let i = 0; i < numberOfWalls; i++) {
-            let randRow = this.randomInt(1, size - 2)
-            let randCol = this.randomInt(1, size - 2)
-
-            // only points can be overridden
+            let randRow = this.randomInt(1, this.mazeSize - 2)
+            let randCol = this.randomInt(1, this.mazeSize - 2)
             if (maze[randRow][randCol] === 1) {
+                // override point
                 maze[randRow][randCol] = 0
             } else {
-                // a enemy cannot be placed so add one so it wont get missed
+                // a enemy cannot be placed so subtract one so it wont get missed
                 i--
             }
         }
 
-        for (let i = 0; i < numberOfEnemies; i++) {
-            let randRow = this.randomInt(1, size - 2)
-            let randCol = this.randomInt(1, size - 2)
-
-            // only points can be overridden
+        for (let i = 0; i < this.mazeNumberOfEnemies; i++) {
+            let randRow = this.randomInt(1, this.mazeSize - 2)
+            let randCol = this.randomInt(1, this.mazeSize - 2)
             if (maze[randRow][randCol] === 1) {
+                // override point
                 maze[randRow][randCol] = 2
             } else {
-                // a enemy cannot be placed so add one so it wont get missed
+                // a enemy cannot be placed so subtract one so it wont get missed
                 i--
             }
         }
 
         while (true) {
-            let randRow = this.randomInt(1, size - 2)
-            let randCol = this.randomInt(1, size - 2)
-
+            let randRow = this.randomInt(1, this.mazeSize - 2)
+            let randCol = this.randomInt(1, this.mazeSize - 2)
             if (maze[randRow][randCol] === 1) {
                 maze[randRow][randCol] = 3
                 this.playerDiscreteStartingPosition = [randRow, randCol]
                 this.playerDiscretePosition = [randRow, randCol]
                 break
             } else {
-                // the player cannot be placewd so continue
+                // the player cannot be placed so continue
                 continue
             }
         }
 
         let totalPoints = 0
-        let reachablePoints = 0
+        let totalBlocks = 0
+        let reachableBlocks = 0
         let mazeCopy = structuredClone(maze)
         let startedSearch = false
         for (let row = 0; row < maze.length; row++) {
             for (let col = 0; col < maze.length; col++) {
+                if (maze[row][col] !== 0) {
+                    totalBlocks++
+                }
+
                 if (maze[row][col] === 1) {
                     if (startedSearch === false) {
                         startedSearch = true
 
-                        // implementation of a 4 direction flood fill algorithm to find reachable points
+                        // implementation of a 4 direction flood fill algorithm to find reachable blocks (any block that isnt a wall)
                         let stack = [[row, col]]
-
                         while (stack.length > 0) {
-                            let [row, col] = stack.pop()
+                            let [ffRow, ffCol] = stack.pop()
 
-                            if (mazeCopy[row][col] === 0) {
+                            if (mazeCopy[ffRow][ffCol] === 0) {
                                 continue
                             }
 
-                            if (mazeCopy[row][col] === 1) {
-                                reachablePoints++
-                            }
+                            reachableBlocks++
+                            mazeCopy[ffRow][ffCol] = 0
 
-                            mazeCopy[row][col] = 0
-
-                            if (row + 1 < mazeCopy.length) {
-                                stack.push([row + 1, col])
+                            if (ffRow + 1 < mazeCopy.length) {
+                                stack.push([ffRow + 1, ffCol])
                             }
                 
-                            if (row - 1 > 0) {
-                                stack.push([row - 1, col])
+                            if (ffRow - 1 > 0) {
+                                stack.push([ffRow - 1, ffCol])
                             }
                 
-                            if (col + 1 < mazeCopy.length) {
-                                stack.push([row, col + 1])
+                            if (ffCol + 1 < mazeCopy.length) {
+                                stack.push([ffRow, ffCol + 1])
                             }
                 
-                            if (col - 1 > 0) {
-                                stack.push([row, col - 1])
+                            if (ffCol - 1 > 0) {
+                                stack.push([ffRow, ffCol - 1])
                             }
                         }
                     }
@@ -324,176 +356,171 @@ class SnackmanGame {
             }
         }
 
-        if (reachablePoints !== totalPoints) {
-            // generate a new maze in the hope all points are reachable
-            this.generateMaze(size, numberOfEnemies)
+        if (reachableBlocks !== totalBlocks) {
+            // not everywhere is reachable, so generate a new maze in the hope all points are reachable
+            this.generateMaze()
         } else {
-            this.currentMaze = maze 
-            this.currentMazeMaxPoints = totalPoints
+            this.maze = maze 
+            this.mazeMaxPoints = totalPoints
+        }
+    }
+
+    buildLivesInHTML() {
+        this.livesElement.innerHTML = ""
+        this.lifeElements = []
+
+        for (let i = this.playerLives; i > 0; i--) {
+            const li = document.createElement("li")
+            this.lifeElements[i] = li
+            this.livesElement.appendChild(li)
         }
     }
 
     buildMazeInHTML() {
         this.mazeElement.innerHTML = ""
+        this.mazeElement.style.setProperty("--maze-size", this.maze.length)
+        this.enemyElements = []
+        this.pointElements = []
 
-        for (let row = 0; row < this.currentMaze.length; row++) {
-            for (let col = 0; col < this.currentMaze.length; col++) {
-                switch (this.currentMaze[row][col]) {
+        for (let row = 0; row < this.maze.length; row++) {
+            this.pointElements[row] = []
+            for (let col = 0; col < this.maze.length; col++) {
+                let block = document.createElement("div") 
+                switch (this.maze[row][col]) {
                     case 0: {
-                        let block = document.createElement("div")
                         block.classList.add("block", "wall")
-                        this.mazeElement.appendChild(block)
-                        break;
+                        break
                     }
                     case 1: {
-                        let block = document.createElement("div")
                         block.classList.add("block", "point")
-                        block.id = `${row}:${col}`
-                        this.mazeElement.appendChild(block)
+                        this.pointElements[row][col] = block
                         break
                     }
                     case 2: {
-                        let block = document.createElement("img")
                         block.classList.add("block", "enemy")
-                        block.src = "images/enemy.png"
-                        this.mazeElement.appendChild(block)
-                        break;
+                        this.enemyElements.push({
+                            enemy: block,
+                            startingPosition: [row, col],
+                            position: [row, col],
+                            direction: [0, 0],
+                            spacesLeft: 0,
+                            hasMoved: false,
+                        })
+                        break
                     }
                     case 3: {
-                        this.playerElement = document.createElement("img")
-                        this.playerElement.classList.add("block", "player")
-                        this.playerElement.src = "images/mouthOpen.png"
-                        this.playerElement.dataset.mouthOpen = "true"
-                        this.mazeElement.appendChild(this.playerElement)
-                        break;
+                        block.classList.add("block", "player")
+                        this.playerElement = block
+                        break
                     }
                 }
+                this.mazeElement.appendChild(block)
             }
         }
     }
 
-    resetGame() {
-        this.generateMaze()
-        this.buildMazeInHTML()
+    resetGame(resetLevelAndScore=true) {
+        if (this.started) {
+            this.playerLives = this.playerStartingLives
+            this.playerScore = 0
+            this.upButtonActive = false 
+            this.ownButtonActive = false 
+            this.leftButtonActive = false 
+            this.rightButtonActive = false
+            this.upKeyActive = false 
+            this.downKeyActive = false 
+            this.leftKeyActive = false 
+            this.rightKeyActive = false
+            this.playerMoving = false
+            this.playerInvincible = false 
+            this.enemiesMoving = false 
 
-        this.playerScore = this.playerStartingScore
-        this.playerLives = this.playerStartingLives
+            if (resetLevelAndScore) {
+                this.scoreElement.innerText = "0"
+                this.levelElement.innerText = "0"
+                this.playerTotalScore = 0
+                this.playerLevel = 1
+                this.mazeSize = this.mazeStartingSize
+                this.mazeNumberOfEnemies = this.mazeStartingNumberOfEnemies
+            }
 
-        this.scoreElement.innerText = this.playerScore
-
-        for (let i = this.playerLives; i > 0; i--) {
-            const li = document.getElementById(`life:${i}`)
-            li.classList.remove("obtained")
+            this.generateMaze()
+            this.buildMazeInHTML()
+            this.buildLivesInHTML()
+     
+            // get the float width of a block in pixels
+            this.blockSizeInPixels = this.mazeElement.children[0].getBoundingClientRect().width
         }
-
-        // get the float width of a block
-        this.blockSizeInPixels = this.mazeElement.children[0].getBoundingClientRect().width
-
-        this.upButtonActive = false 
-        this.ownButtonActive = false 
-        this.leftButtonActive = false 
-        this.rightButtonActive = false
-    
-        this.upKeyActive = false 
-        this.downKeyActive = false 
-        this.leftKeyActive = false 
-        this.rightKeyActive = false
-
-        this.playerMoving = false
-        this.playerImmobile = false 
-        this.playerWasHitAndHasNotMovedSince = false
     }
 
     startGame() {
+        this.playerElement.classList.add("mouth")
+
         // .bind(this) ensures the context for `this` is correct
-        // javascript is weird
-        this.gameTickInterval = setInterval(this.gameTick.bind(this), this.gameTickSpeed)
-        this.animationTickInterval = setInterval(this.animationTick.bind(this), this.animationTickSpeed)
+        this.gameTickInterval = setInterval(this.gameTick.bind(this), this.gameTickSpeed)        
+        this.started = true
     }
 
     finishGame(win) {
-        clearInterval(this.animationTickInterval)
-        clearInterval(this.gameTickInterval)
+        if (this.started) {
+            // stop animating
+            this.playerElement.classList.remove("mouth")
 
-        if (win) {
-        } else {
-            this.multipurposeButtonState = "restart"
-            this.multipurposeButtonTextElement.innerText = "Restart?"
-            this.multipurposeButtonElement.classList.remove("hidden")
-        }
-    }
+            // stop ticks
+            clearInterval(this.gameTickInterval)
 
-    animationTick() {
-        if (this.playerElement.dataset.mouthOpen === "true") {
-            this.playerElement.src = "images/mouthClosed.png"
-            this.playerElement.dataset.mouthOpen = "false"
-        } else {
-            this.playerElement.src = "images/mouthOpen.png"
-            this.playerElement.dataset.mouthOpen = "true"
+            if (win) {
+                this.continueOrFinishButtonRootElement.classList.remove("hidden")
+            } else {
+                this.restartButtonRootElement.classList.remove("hidden")
+            }
         }
     }
 
     gameTick() {
-        if (!this.playerMoving && !this.playerImmobile) {
+        // player movement (cannot move when invincible)
+        if (!this.playerMoving && !this.playerInvincible) {
+            // this is here so if the player wins, the notification finishes for the player to finish moving
+            if (this.playerScore === this.mazeMaxPoints) {
+                this.finishGame(true)
+            }
+
+            let playerMoving = false
+            let searchDirection = null
+            let playerRotation = null
             if (this.upKeyActive || this.upButtonActive) {
-                if (this.currentMaze[this.playerDiscretePosition[0] - 1][this.playerDiscretePosition[1]] !== 0) {
-                    // above is not a wall
-                    this.playerDiscretePosition[0]--
-                
-                    // calculate absolute new column cord from relative starting position
-                    const position = (this.playerDiscretePosition[0] - this.playerDiscreteStartingPosition[0]) * this.blockSizeInPixels
-                    this.playerElement.style.top = `${position}px`
-                    this.playerElement.classList.add("faceUp")
-                    this.playerElement.classList.remove("faceDown", "faceLeft", "faceRight")
-    
-                    // no input will be accepted for however long `this.playerMovingDuration` is
-                    this.playerMoving = true 
-                    setTimeout(() => {
-                        this.playerMoving = false
-                    }, this.playerMovingDuration)
-                }
+                searchDirection = [-1, 0]
+                playerRotation = 270
             } else if (this.downKeyActive || this.downButtonActive) {
-                if (this.currentMaze[this.playerDiscretePosition[0] + 1][this.playerDiscretePosition[1]] !== 0) {
-                    this.playerDiscretePosition[0]++
-                    
-                    // calculate absolute new column cord from relative starting position
-                    const position = (this.playerDiscretePosition[0] - this.playerDiscreteStartingPosition[0]) * this.blockSizeInPixels
-                    this.playerElement.style.top = `${position}px`
-                    this.playerElement.classList.add("faceDown")
-                    this.playerElement.classList.remove("faceUp", "faceLeft", "faceRight")
-
-                    // no input will be accepted for however long `this.playerMovingDuration` is
-                    this.playerMoving = true 
-                    setTimeout(() => {
-                        this.playerMoving = false
-                    }, this.playerMovingDuration)
-                }
+                searchDirection = [+1, 0]
+                playerRotation = 90
             } else if (this.leftKeyActive || this.leftButtonActive) {
-                if (this.currentMaze[this.playerDiscretePosition[0]][this.playerDiscretePosition[1] - 1] !== 0) {
-                    this.playerDiscretePosition[1]--
-                    
-                    // calculate absolute new column cord from relative starting position
-                    const position = (this.playerDiscretePosition[1] - this.playerDiscreteStartingPosition[1]) * this.blockSizeInPixels
-                    this.playerElement.style.left = `${position}px`
-                    this.playerElement.classList.add("faceLeft")
-                    this.playerElement.classList.remove("faceUp", "faceDown", "faceRight")
-
-                    // no input will be accepted for however long `this.playerMovingDuration` is
-                    this.playerMoving = true 
-                    setTimeout(() => {
-                        this.playerMoving = false
-                    }, this.playerMovingDuration)
-                }
+                searchDirection = [0, -1]
+                playerRotation = 180
             } else if (this.rightKeyActive || this.rightButtonActive) {
-                if (this.currentMaze[this.playerDiscretePosition[0]][this.playerDiscretePosition[1] + 1] !== 0) {
-                    this.playerDiscretePosition[1]++
+                searchDirection = [0, +1]
+                playerRotation = 0
+            }
 
-                    // calculate absolute new column cord from relative starting position
-                    const position = (this.playerDiscretePosition[1] - this.playerDiscreteStartingPosition[1]) * this.blockSizeInPixels
-                    this.playerElement.style.left = `${position}px`
-                    this.playerElement.classList.add("faceRight")
-                    this.playerElement.classList.remove("faceUp", "faceDown", "faceLeft")
+            if (searchDirection !== null) {
+                let block = this.maze[this.playerDiscretePosition[0] + searchDirection[0]][this.playerDiscretePosition[1] + searchDirection[1]]
+                if (block !== 0) {
+                    this.playerDiscretePosition[0] += searchDirection[0]
+                    this.playerDiscretePosition[1] += searchDirection[1]
 
+                    if (searchDirection[0] !== 0) {
+                        this.playerElement.style.top = `${(this.playerDiscretePosition[0] - this.playerDiscreteStartingPosition[0]) * this.blockSizeInPixels}px`
+                    } else if (searchDirection[1] !== 0) {
+                        this.playerElement.style.left = `${(this.playerDiscretePosition[1] - this.playerDiscreteStartingPosition[1]) * this.blockSizeInPixels}px`
+                    }
+
+                    playerMoving = true 
+                }
+    
+                // even if we dont move the player, they should face the correct direction
+                this.playerElement.style.setProperty("--rotation", `${playerRotation}deg`)
+
+                if (playerMoving) {
                     // no input will be accepted for however long `this.playerMovingDuration` is
                     this.playerMoving = true 
                     setTimeout(() => {
@@ -501,57 +528,173 @@ class SnackmanGame {
                     }, this.playerMovingDuration)
                 }
             }
-            
-            if (this.playerMoving) {
-                this.playerWasHitAndHasNotMovedSince = false
+        }
+        
+        // enemy movement
+        if (this.enemiesMoving === false) {
+            // reset this so the player can be hurt again
+            this.playerHasBeenHit = false 
+
+            for (let enemy of this.enemyElements) {
+                enemy.hasMoved = false
+
+                if (enemy.direction == undefined) {
+                    enemy.direction = [0, 0]
+                }
+
+                if (enemy.spacesLeft === 0 || this.maze[enemy.position[0] + enemy.direction[0]][enemy.position[1] + enemy.direction[1]] === 0) {
+                    // enemy either has spacesLeft to go or no direction or will hit a wall or hit a player
+                    let directions = []
+
+                    if (enemy.position[0] - 1 > 0) {
+                        let block = this.maze[enemy.position[0] - 1][enemy.position[1]]
+
+                        // prevent enemies from sharing the same space
+                        let enemyInPosition
+                        for (let otherEnemy of this.enemyElements) {
+                            if (otherEnemy !== enemy) {
+                                if (otherEnemy.hasMoved && otherEnemy.position[0] === enemy.position[0] - 1 && otherEnemy.position[1] === enemy.position[1]) {
+                                    enemyInPosition = true 
+                                    break
+                                }
+                            }
+                        }
+
+                        if (block === 1 && !enemyInPosition) {
+                            // point or player
+                            directions.push([-1, 0])
+                        }
+                    }
+
+                    if (enemy.position[0] + 1 < this.maze.length) {
+                        let block = this.maze[enemy.position[0] + 1][enemy.position[1]]
+
+                        // prevent enemies from sharing the same space
+                        let enemyInPosition
+                        for (let otherEnemy of this.enemyElements) {
+                            if (otherEnemy !== enemy) {
+                                if (otherEnemy.hasMoved && otherEnemy.position[0] === enemy.position[0] + 1 && otherEnemy.position[1] === enemy.position[1]) {
+                                    enemyInPosition = true 
+                                    break
+                                }
+                            }
+                        }
+
+                        if (block === 1 && !enemyInPosition) {
+                            // point or player
+                            directions.push([+1, 0])
+                        }
+                    }
+
+                    if (enemy.position[1] - 1 > 0) {
+                        let block = this.maze[enemy.position[0]][enemy.position[1] - 1]
+
+                        // prevent enemies from sharing the same space
+                        let enemyInPosition
+                        for (let otherEnemy of this.enemyElements) {
+                            if (otherEnemy !== enemy) {
+                                if (otherEnemy.hasMoved && otherEnemy.position[0] === enemy.position[0] && otherEnemy.position[1] === enemy.position[1] - 1) {
+                                    enemyInPosition = true 
+                                    break
+                                }
+                            }
+                        }
+
+                        if (block === 1 && !enemyInPosition) {
+                            // point or player
+                            directions.push([0, -1])
+                        }
+                    }
+
+                    if (enemy.position[1] + 1 < this.maze.length) {
+                        let block = this.maze[enemy.position[0]][enemy.position[1] + 1]
+
+                        // prevent enemies from sharing the same space
+                        let enemyInPosition
+                        for (let otherEnemy of this.enemyElements) {
+                            if (otherEnemy !== enemy) {
+                                if (otherEnemy.hasMoved && otherEnemy.position[0] === enemy.position[0] && otherEnemy.position[1] === enemy.position[1] + 1) {
+                                    enemyInPosition = true 
+                                    break
+                                }
+                            }
+                        }
+
+                        if (block === 1 && !enemyInPosition) {
+                            // point or player
+                            directions.push([0, +1])
+                        }
+                    }
+
+                    let chosenDirection = directions[this.randomInt(0, directions.length - 1)] 
+                    // if we have set a direction and we have multiple directions to choose from   
+                    if (enemy.direction !== null && directions.length > 1) {
+                        // avoid going back the way we came
+                        while (enemy.direction[0] * -1 === chosenDirection[0] && enemy.direction[1] * -1 === chosenDirection[1]) {
+                            chosenDirection = directions[this.randomInt(0, directions.length - 1)]  
+                        }
+                    }  
+
+                    enemy.spacesLeft = this.randomInt(0, Math.floor(this.maze.length / 4))
+                    enemy.direction = chosenDirection
+                }
+
+                enemy.position[0] += enemy.direction[0]
+                enemy.position[1] += enemy.direction[1]
+
+                if (enemy.direction[0] !== 0) {
+                    enemy.enemy.style.top = `${(enemy.position[0] - enemy.startingPosition[0]) * this.blockSizeInPixels}px`
+                } else if (enemy.direction[1] !== 0) {
+                    enemy.enemy.style.left = `${(enemy.position[1] - enemy.startingPosition[1]) * this.blockSizeInPixels}px`
+                }
+
+                enemy.hasMoved = true
+                enemy.spacesLeft--
             }
 
-            switch (this.currentMaze[this.playerDiscretePosition[0]][this.playerDiscretePosition[1]]) {
-                case 1: {
-                    // its a point
-                    const point = document.getElementById(`${this.playerDiscretePosition[0]}:${this.playerDiscretePosition[1]}`)
-                    if (point !== null && !point.classList.contains("obtained")) {
-                        point.classList.add("obtained")
-                        
-                        this.playerScore++
-                        this.scoreElement.innerText = this.playerScore
-        
-                        if (this.playerScore === this.currentMazeMaxPoints) {
-                            console.log("win")
-                        }
-                    } 
-                    break
-                }
-                case 2: {
-                    // its an enemy
-                    if (this.playerWasHitAndHasNotMovedSince === false) {
-                        document.getElementById(`life:${this.playerLives}`).classList.add("expended")
+            this.enemiesMoving = true 
+            setTimeout(() => {
+                this.enemiesMoving = false
+            }, this.enemiesMovingDuration)
+        }
 
-                        this.playerLives--
+        // points detection
+        const point = this.pointElements[this.playerDiscretePosition[0]][this.playerDiscretePosition[1]]
+        if (point !== undefined && !point.classList.contains("obtained")) {
+            point.classList.add("obtained")
+            
+            this.playerScore++
+            this.playerTotalScore++
+            this.scoreElement.innerText = this.playerTotalScore
+        } 
 
-                        if (this.playerLives === 0) {
-                            this.playerElement.classList.add("dead")
-
-                            this.playerImmobile = true 
-                            setTimeout(() => {
-                                this.playerImmobile = false
-
-                                this.finishGame(false)
-                            }, this.playerImmobileDuration)
-                        } else {
-                            this.playerElement.classList.add("hit")
-
-                            this.playerImmobile = true 
-                            setTimeout(() => {
-                                this.playerImmobile = false
-
-                                this.playerElement.classList.remove("hit")
-                            }, this.playerImmobileDuration)
-                        }
-
-                        this.playerWasHitAndHasNotMovedSince = true
-                        break
+        // enemy hit processing
+        if (!this.playerInvincible) {
+            for (let enemy of this.enemyElements) {
+                if (enemy.position[0] === this.playerDiscretePosition[0] && enemy.position[1] === this.playerDiscretePosition[1]) {
+                    this.lifeElements[this.playerLives].classList.add("expended")
+    
+                    this.playerLives--
+    
+                    if (this.playerLives === 0) {
+                        this.playerElement.classList.add("dead")
+    
+                        this.playerInvincible = true 
+                        setTimeout(() => {
+                            this.playerInvincible = false
+                            this.finishGame(false)
+                        }, this.playerInvincibleDuration)
+                    } else {
+                        this.playerElement.classList.add("hit")
+    
+                        this.playerInvincible = true
+                        setTimeout(() => {
+                            this.playerInvincible = false
+                            this.playerElement.classList.remove("hit")
+                        }, this.playerInvincibleDuration)
                     }
+                    
+                    break
                 }
             }
         }

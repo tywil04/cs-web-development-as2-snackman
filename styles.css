@@ -1,14 +1,38 @@
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
+:root {
+    --font-family: "Press Start 2P";
+
+    --text-color: rgb(255, 255, 255);
+    --text-color-hover: rgba(255, 255, 255, 0.45);
+
+    --bg-color: rgb(0, 0, 0);
+    --secondary-bg-color: rgba(20, 20, 20, 1);
+    --tertiary-bg-color: rgba(10, 10, 10, 1);
+    
+    --wall-color: rgb(0, 0, 255);
+    --point-color: rgb(255, 255, 255);
+    --unexpended-life-color: rgb(255, 0, 0);
+    --expended-life-color: rgb(211, 211, 211);
+    --snackman-mouth: polygon(100% -10%, 0% -10%, 0% 110%, 100% 110%, 100% 75%, 50% 50%, 100% 25%);
+    --snackman-color: rgb(255, 204, 0);
+    --snackman-hit-color: rgb(255, 0, 0);
+    --enemy-color: rgb(0, 128, 0);
+    --move-speed: 500ms;
+
+    --hover-duration: 100ms;
+    --box-shadow: rgba(0, 0, 0, 0.2) 0px 12px 28px 0px, rgba(0, 0, 0, 0.1) 0px 2px 4px 0px, rgba(255, 255, 255, 0.05) 0px 0px 0px 1px inset;
+}
+
 * {
     margin: 0;
     padding: 0;
-    color: white;
-    font-family: 'Press Start 2P';
+    color: var(--text-color);
+    font-family: var(--font-family);
 }
 
 body {
-    background-color: black;
+    background-color: var(--bg-color);
     height: 100vh;
     display: grid;
     grid-template-columns: 1fr 80vh 1fr;
@@ -16,13 +40,14 @@ body {
     grid-template-areas: 
         "header header header"
         "leaderboard main score"
+        "leaderboard main level"
         "leaderboard main controls"
     ;
     align-items: center;
     justify-items: center;
 }
 
-.title {
+header {
     grid-area: header;
     text-align: center;
 
@@ -38,43 +63,148 @@ body {
     align-items: center;
     justify-content: center;
 
-    & > .multipurposeButton {
-        background-color: #4b4b4b;
+    & > div {
+        background-color: var(--secondary-bg-color);
         z-index: 100;
-        cursor: pointer;
         border-radius: 20px;
-        padding: 20px 30px;
+        padding: 25px 45px;
         display: flex;
-        border: none;
+        height: fit-content;
+        cursor: default;
+        box-shadow: var(--box-shadow);
+        outline: none;
 
         &.hidden {
             display: none;
         }
 
-        & > .logo {
-            height: 32px;
-            width: 32px;
-            aspect-ratio: 1/1;
-        }
+        & > div:not(.logo) {
+            display: flex;
+            flex-direction: column;
+            margin-left: 25px;
 
-        & > .text {
-            text-shadow: 2px 2px 2px #000;
-            font-size: 2em;
-            text-decoration: none;
-            margin-left: 10px;
-            height: 32px;
+            & > .or {
+                width: 100%;
+                height: 10px;
+                text-align: left;
+                margin-top: 20px;
+                margin-bottom: 20px;
+                margin-left: 10px;
+            }
+
+            & > button {
+                width: fit-content;
+                height: fit-content;
+                background: none;
+                cursor: pointer;
+                outline: none;
+                cursor: pointer;
+                color: var(--text-color);
+                border: none;
+
+                &:hover > h1 {
+                    color: var(--text-color-hover);
+                }
+
+                & > h1 {
+                    text-align: left;
+                    transition-duration: var(--hover-duration);
+                    font-size: 2em;
+                    text-decoration: none;
+                    margin-left: 10px;
+                    height: 48px;
+                    line-height: 48px;
+                }
+            }
         }
     }
 }
 
 #maze {
+    --maze-size: 10;
+
     grid-area: main;
     display: grid;
-    grid-template-columns: repeat(auto-fill, 10%);
+    grid-template-columns: repeat(var(--maze-size), calc(100% / var(--maze-size)));
+    grid-template-rows: repeat(var(--maze-size), calc(100% / var(--maze-size)));
     width: 80vh;
     height: 80vh;
     align-items: center;
     justify-items: center;
+
+    .block  {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        aspect-ratio: 1/1;
+    
+        &.player {
+            --rotation: 0deg;
+
+            z-index: 2;
+            top: 0;
+            left: 0;
+            transition-property: top, left;
+            transition-duration: var(--move-speed);
+            border-radius: 1000px;
+            background: var(--snackman-color);
+            transform: rotate(var(--rotation));
+            clip-path: var(--snackman-mouth);
+
+            /* idk why but this makes snackman fit better */
+            width: calc(100% - 2px);
+            height: calc(100% - 2px);
+
+            &.mouth {
+                animation: mouthAnimation;
+                animation-duration: 800ms;
+                animation-timing-function: linear;
+                animation-iteration-count: infinite;
+            }
+    
+            &.dead {
+                animation: deathAnimation 1.5s ease-in-out forwards !important;
+            }
+            
+            &.hit {
+                animation: hitAnimation 1.5s ease-in-out !important;
+            }
+        }
+    
+        &.point {
+            border-radius: 100%;
+            background-color: var(--point-color);
+            height: 1vh;
+            width: 1vh;
+            z-index: 0;
+            opacity: 100%;
+            transition-property: top;
+            transition-duration: 100ms;
+    
+            &.obtained {
+                opacity: 0%;
+            }
+        }
+        
+        &.enemy {
+            z-index: 1;
+            border-radius: 1000px;
+            background: var(--enemy-color);
+            top: 0;
+            left: 0;
+            transition-property: top, left;
+            transition-duration: var(--move-speed);
+
+            /* idk why but this makes snackman fit better */
+            width: calc(100% - 2px);
+            height: calc(100% - 2px);
+        }
+    
+        &.wall {
+            background-color: var(--wall-color);
+            z-index: 3;
+        }
+    }
 }
 
 /* Lives styling */
@@ -92,14 +222,14 @@ body {
 
         & > li {
             list-style: none;
-            background-color: red;
+            background-color: var(--unexpended-life-color);
             width: 2em;
             height: 2em;
             border-radius: 100%;
             margin: 5px;
         
             &.expended {
-                background-color: lightgray;
+                background-color: var(--expended-life-color);
             }
         }
     }
@@ -107,6 +237,10 @@ body {
 
 .score {
     grid-area: score;
+}
+
+.level {
+    grid-area: level;
 }
 
 .leaderboard {
@@ -139,67 +273,6 @@ div {
     }
 }
 
-.block  {
-    width: 100%;
-    height: 100%;
-    position: relative;
-    aspect-ratio: 1/1;
-
-    &.player {
-        z-index: 2;
-        top: 0;
-        left: 0;
-        transition-property: top, left;
-        transition-duration: 400ms;
-        border-radius: 1000px;
-        
-        &.faceUp {
-            transform: rotate(270deg);
-        }
-
-        &.faceDown {
-            transform: rotate(90deg);
-        }
-
-        &.faceLeft {
-            transform: rotate(180deg);
-        }
-
-        &.faceRight {
-            transform: rotate(0deg);
-        }
-
-        &.dead {
-            animation: deathAnimation 1.5s ease-in-out forwards;
-        }
-        
-        &.hit {
-            animation: hitAnimation 1.5s ease-in-out;
-        }
-    }
-
-    &.point {
-        border-radius: 100%;
-        background-color: white;
-        height: 1vh;
-        width: 1vh;
-        z-index: 0;
-
-        &.obtained {
-            opacity: 0%;
-        }
-    }
-    
-    &.enemy {
-        z-index: 1;
-    }
-
-    &.wall {
-        background-color: blue;
-        z-index: 3;
-    }
-}
-
 .controls {
     grid-area: controls;
     display: grid;
@@ -207,55 +280,104 @@ div {
     grid-template-rows: repeat(3, 1fr);
     grid-template-areas: 
         ". upArrow ."
-        "leftArrow . rightArrow"
+        "leftArrow middle rightArrow"
         ". downArrow ."
     ;
     width: 25vh;
     height: 25vh;
+    border-radius: 12px;
 
-    & > .directionalButton {
-        background-color: rgb(10, 10, 10);
-    
+    & > button {
+        background-color: var(--secondary-bg-color);
+        border-radius: 12px;
+        cursor: pointer;
+        outline: none;
+        transition-duration: var(--hover-duration);
+        border: none;
+        box-shadow: var(--box-shadow);
+
+        &:hover {
+            color: var(--text-color-hover);
+        }
+
+        &[data-pressed=true] {
+            background-color: var(--tertiary-bg-color);
+        }
+
         &:nth-child(1) { 
-            grid-area: leftArrow; 
+            grid-area: upArrow;
+            border-bottom-left-radius: 0px;
+            border-bottom-right-radius: 0px;
+            margin-bottom: -1px;
         }
     
         &:nth-child(2) {
-            grid-area: upArrow;
+            grid-area: downArrow;
+            border-top-left-radius: 0px;
+            border-top-right-radius: 0px;
+            margin-top: -1px;
         }
     
         &:nth-child(3) {
-            grid-area: rightArrow;
+            grid-area: leftArrow; 
+            border-top-right-radius: 0px;
+            border-bottom-right-radius: 0px;
+            margin-right: -1px;
         }
     
         &:nth-child(4) {
-            grid-area: downArrow;
+            grid-area: rightArrow;
+            border-top-left-radius: 0px;
+            border-bottom-left-radius: 0px;
+            margin-left: -1px;
         }
     }
+
+    & > .middle {
+        grid-area: middle;
+        background-color: var(--secondary-bg-color);
+    }
+}
+
+.logo {
+    margin-top: auto;
+    margin-bottom: auto;
+    clip-path: var(--snackman-mouth);
+    height: 48px;
+    width: 48px;
+    border-radius: 1000px;
+    background: var(--snackman-color);
+    padding: 0; 
 }
 
 @keyframes deathAnimation {
     0% {
-        transform: scale(1);
+        transform: rotate(var(--rotation)) scale(1);
     }
-
     50% {
-        transform: scale(0.5);
+        transform: rotate(var(--rotation)) scale(0.5);
     }
-
     100% {
-        transform: scale(0);
+        transform: rotate(var(--rotation)) scale(0);
     }
 }
 
 @keyframes hitAnimation {
     0%, 100% {
-        background-color: #ffcc00;
-        transform: scale(1);
+        background: var(--snackman-color);
+        transform: rotate(var(--rotation)) scale(1);
     }
-
     50% {
-        color: #ff0000;
-        transform: scale(0.75);
+        background: var(--snackman-hit-color);
+        transform: rotate(var(--rotation)) scale(0.75);
+    }
+}
+
+@keyframes mouthAnimation {
+    0% {
+        clip-path: var(--snackman-mouth);
+    }
+    100% {
+        clip-path: none;
     }
 }
