@@ -31,7 +31,7 @@ class SnackmanGame {
     playerMovingDuration = 400 // ms
     playerMoving = false
     
-    playerImmolileDuration = 1500 // ms
+    playerImmobileDuration = 1500 // ms
     playerImmobile = false 
 
     playerStartingScore = 0
@@ -44,6 +44,8 @@ class SnackmanGame {
 
     blockSizeInPixels
 
+    multipurposeButtonState = "start"
+
     // holds the interval for tick
     animationTickInterval
     animationTickSpeed = 400 // ms
@@ -51,15 +53,15 @@ class SnackmanGame {
     gameTickSpeed = 1 // ms
 
     constructor(elements) {
-        this.mazeElement = document.getElementById(elements.maze)
-        this.upButtonElement = document.getElementById(elements.upButton)
-        this.downButtonElement = document.getElementById(elements.downButton)
-        this.leftButtonElement = document.getElementById(elements.leftButton)
-        this.rightButtonElement = document.getElementById(elements.rightButton)
-        this.multipurposeButtonElement = document.getElementById(elements.multipurposeButton)
-        this.multipurposeButtonTextElement = document.getElementById(elements.multipurposeButtonText)
-        this.scoreElement = document.getElementById(elements.score)
-        this.livesElement = document.getElementById(elements.lives)
+        this.mazeElement = document.getElementById("maze")
+        this.upButtonElement = document.getElementById("upButton")
+        this.downButtonElement = document.getElementById("downButton")
+        this.leftButtonElement = document.getElementById("leftButton")
+        this.rightButtonElement = document.getElementById("rightButton")
+        this.multipurposeButtonElement = document.getElementById("multipurposeButton")
+        this.multipurposeButtonTextElement = document.getElementById("multipurposeButtonText")
+        this.scoreElement = document.getElementById("score")
+        this.livesElement = document.getElementById("lives")
 
         // .bind(this) ensures the context for `this` is correct
         // javascript is weird
@@ -70,7 +72,7 @@ class SnackmanGame {
         this.downButtonElement.addEventListener("click", this.eventHandleDownButtonClick.bind(this))
         this.leftButtonElement.addEventListener("click", this.eventHandleLeftButtonClick.bind(this))
         this.rightButtonElement.addEventListener("click", this.eventHandleRightButtonClick.bind(this))
-        this.multipurposeButtonElement.addEventListener("click", this.eventHandleStartButtonClick.bind(this))
+        this.multipurposeButtonElement.addEventListener("click", this.eventHandleMultipurposeButtonClick.bind(this))
 
         this.generateMaze()
         this.buildMazeInHTML()
@@ -88,9 +90,20 @@ class SnackmanGame {
         this.blockSizeInPixels = this.mazeElement.children[0].getBoundingClientRect().width
     }
 
-    eventHandleStartButtonClick() {
-        this.startGame()
-        this.multipurposeButtonElement.classList.add("hidden")
+    eventHandleMultipurposeButtonClick() {
+        switch (this.multipurposeButtonState) {
+            case "start": {
+                this.startGame()
+                this.multipurposeButtonElement.classList.add("hidden")
+                break
+            }
+            case "restart": {
+                this.resetGame()
+                this.startGame()
+                this.multipurposeButtonElement.classList.add("hidden")
+                break
+            }
+        }
     }
 
     eventHandleKeyDown(event) {
@@ -182,8 +195,10 @@ class SnackmanGame {
 
     // wall = 0, point = 1, enemy = 2, player = 3
     generateMaze(size=10, numberOfEnemies=2) {
-        let numberOfWalls = this.randomInt(size / 2, size * 1.5) // between 0 and size walls
+        this.currentMaze = []
+        this.currentMazeMaxPoints = 0
 
+        let numberOfWalls = this.randomInt(size / 2, size * 1.5) // between 0 and size walls
         let maze = []
 
         for (let row = 0; row < size; row++) {
@@ -319,6 +334,8 @@ class SnackmanGame {
     }
 
     buildMazeInHTML() {
+        this.mazeElement.innerHTML = ""
+
         for (let row = 0; row < this.currentMaze.length; row++) {
             for (let col = 0; col < this.currentMaze.length; col++) {
                 switch (this.currentMaze[row][col]) {
@@ -355,6 +372,38 @@ class SnackmanGame {
         }
     }
 
+    resetGame() {
+        this.generateMaze()
+        this.buildMazeInHTML()
+
+        this.playerScore = this.playerStartingScore
+        this.playerLives = this.playerStartingLives
+
+        this.scoreElement.innerText = this.playerScore
+
+        for (let i = this.playerLives; i > 0; i--) {
+            const li = document.getElementById(`life:${i}`)
+            li.classList.remove("obtained")
+        }
+
+        // get the float width of a block
+        this.blockSizeInPixels = this.mazeElement.children[0].getBoundingClientRect().width
+
+        this.upButtonActive = false 
+        this.ownButtonActive = false 
+        this.leftButtonActive = false 
+        this.rightButtonActive = false
+    
+        this.upKeyActive = false 
+        this.downKeyActive = false 
+        this.leftKeyActive = false 
+        this.rightKeyActive = false
+
+        this.playerMoving = false
+        this.playerImmobile = false 
+        this.playerWasHitAndHasNotMovedSince = false
+    }
+
     startGame() {
         // .bind(this) ensures the context for `this` is correct
         // javascript is weird
@@ -362,11 +411,17 @@ class SnackmanGame {
         this.animationTickInterval = setInterval(this.animationTick.bind(this), this.animationTickSpeed)
     }
 
-    // #finishGame(win) {
-    //     if (win) {
-    //         this.mpto
-    //     }
-    // }
+    finishGame(win) {
+        clearInterval(this.animationTickInterval)
+        clearInterval(this.gameTickInterval)
+
+        if (win) {
+        } else {
+            this.multipurposeButtonState = "restart"
+            this.multipurposeButtonTextElement.innerText = "Restart?"
+            this.multipurposeButtonElement.classList.remove("hidden")
+        }
+    }
 
     animationTick() {
         if (this.playerElement.dataset.mouthOpen === "true") {
@@ -474,15 +529,24 @@ class SnackmanGame {
 
                         this.playerLives--
 
-                        this.playerElement.classList.add("hit")
-
-                        this.playerImmobile = true 
-                        setTimeout(() => {
-                            this.playerImmobile = false
-                        }, this.playerImmobileDuration)
-
                         if (this.playerLives === 0) {
-                            console.log("lose")
+                            this.playerElement.classList.add("dead")
+
+                            this.playerImmobile = true 
+                            setTimeout(() => {
+                                this.playerImmobile = false
+
+                                this.finishGame(false)
+                            }, this.playerImmobileDuration)
+                        } else {
+                            this.playerElement.classList.add("hit")
+
+                            this.playerImmobile = true 
+                            setTimeout(() => {
+                                this.playerImmobile = false
+
+                                this.playerElement.classList.remove("hit")
+                            }, this.playerImmobileDuration)
                         }
 
                         this.playerWasHitAndHasNotMovedSince = true
@@ -494,14 +558,4 @@ class SnackmanGame {
     }
 }
 
-const x = new SnackmanGame({
-    maze: "maze",
-    upButton: "upButton",
-    downButton: "downButton",
-    leftButton: "leftButton",
-    rightButton: "rightButton",
-    multipurposeButton: "multipurposeButton",
-    multipurposeButtonText: "multipurposeButtonText",
-    score: "score",
-    lives: "lives",
-})
+new SnackmanGame()
