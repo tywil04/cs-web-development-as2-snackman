@@ -78,7 +78,7 @@ header {
             display: none;
         }
 
-        & > div:not(.logo) {
+        & > div {
             display: flex;
             flex-direction: column;
             margin-left: 25px;
@@ -247,13 +247,18 @@ header {
     grid-area: leaderboard;
 
     & > ol {
-        margin-left: 2.5em;
         margin-top: 1em;
         text-align: left;
 
         & > li {
             font-size: 0.85em;
             padding: 1em 0;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
         }
     }
 }
