@@ -339,14 +339,11 @@ div {
     }
 }
 
-.logo {
+img.logo {
     margin-top: auto;
     margin-bottom: auto;
-    clip-path: var(--snackman-mouth);
     height: 48px;
     width: 48px;
-    border-radius: 1000px;
-    background: var(--snackman-color);
     padding: 0; 
 }
 
