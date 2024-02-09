@@ -53,8 +53,7 @@ The maximum number of walls (not including the outside walls) is:
 mazeSize * 1.5 * Math.floor(this.playerLevel / 3) + 1.
 
 After every level increase, the number of enemies increases by 1 provided the maze has less than 30%
-of its blocks being enemy spawners. After every 3 levels, the maze size is increased by 2 and an 
-additonal enemy is added (alongside the enemy for level increase).
+of its blocks being enemy spawners. After every 3 levels, the maze size is increased by 2.
 
 */
 
@@ -322,12 +321,15 @@ class SnackmanGame {
     }
 
     saveScore() {
-        this.leaderboard.push({
-            name: prompt("Enter your name for the leaderboard."),
-            score: this.playerTotalScore,
-        })
-        this.writeLeaderboard()
-        this.buildLeaderboardInHTML()
+        let name = prompt("Enter your name for the leaderboard.").trim()
+        if (name !== "") {
+            this.leaderboard.push({
+                name,
+                score: this.playerTotalScore,
+            })
+            this.writeLeaderboard()
+            this.buildLeaderboardInHTML()
+        }
     }
 
     increaseDifficulty() {
@@ -336,7 +338,6 @@ class SnackmanGame {
         if ((this.playerLevel % 3) === 0) {
             // is a multiple of 3
             this.mazeSize += 2
-            this.mazeNumberOfEnemies++
         }
 
         if (moreEnemeies) {
@@ -701,14 +702,14 @@ class SnackmanGame {
                             let enemyInPosition
                             for (let otherEnemy of this.enemyElements) {
                                 if (otherEnemy !== enemy) {
-                                    if (otherEnemy.hasMoved && otherEnemy.position[0] === enemy.position[0] + direction[0] && otherEnemy.position[1] === enemy.position[1] + direction[1]) {
+                                    if (otherEnemy.hasMoved === true && otherEnemy.position[0] === enemy.position[0] + direction[0] && otherEnemy.position[1] === enemy.position[1] + direction[1]) {
                                         enemyInPosition = true 
                                         break
                                     }
                                 }
                             }
         
-                            if (block !== this.mazeWallCode && !enemyInPosition) {
+                            if (block !== this.mazeWallCode) {
                                 // not a wall, and enemy not in position
                                 directions.push(direction)
                             }
@@ -730,6 +731,7 @@ class SnackmanGame {
 
                 enemy.position[0] += enemy.direction[0]
                 enemy.position[1] += enemy.direction[1]
+                enemy.hasMoved = true
 
                 if (enemy.direction[0] !== 0) {
                     this.enemyElements[enemy.elementIndex].style.top = `${(enemy.position[0] - enemy.startingPosition[0]) * this.blockSizeInPixels}px`
@@ -737,7 +739,6 @@ class SnackmanGame {
                     this.enemyElements[enemy.elementIndex].style.left = `${(enemy.position[1] - enemy.startingPosition[1]) * this.blockSizeInPixels}px`
                 }
 
-                enemy.hasMoved = true
                 enemy.spacesLeft--
             }
 
