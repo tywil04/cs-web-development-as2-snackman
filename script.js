@@ -50,10 +50,15 @@ The minimum number of walls (not including the outside walls) is:
 mazeSize * Math.floor(playersLevel / 6) + 1. 
 
 The maximum number of walls (not including the outside walls) is: 
-mazeSize * 1.5 * Math.floor(this.playerLevel / 3) + 1.
+mazeSize * 1.5 * Math.floor(playerLevel / 3) + 1.
 
 After every level increase, the number of enemies increases by 1 provided the maze has less than 30%
 of its blocks being enemy spawners. After every 3 levels, the maze size is increased by 2.
+
+
+## Known Bugs
+Sometimes enemies share the same space, this shouldn't happen but there is an issue with the logic I
+have yet to find.
 
 */
 
@@ -125,7 +130,7 @@ class SnackmanGame {
     gameTickSpeed
 
     blockSizeInPixels
-    started 
+    hasStarted 
 
     constructor() {
         this.resetState()
@@ -152,8 +157,7 @@ class SnackmanGame {
     }
 
     handleKeyDown(event) {
-        if (this.started) {
-            // only accept inputs when game has started
+        if (this.hasStarted) {
             this.upKeyActive = event.key === "ArrowUp" || event.key === "w"
             this.downKeyActive = event.key === "ArrowDown" || event.key === "s"
             this.leftKeyActive = event.key === "ArrowLeft" || event.key === "a"
@@ -161,20 +165,13 @@ class SnackmanGame {
 
             if (this.upKeyActive || this.downKeyActive || this.leftKeyActive || this.rightKeyActive) {
                 // the key pressed was from WASD keys or Arrow Keys so cancel onscreen buttons
-                this.upButtonActive = false 
-                this.downButtonActive = false
-                this.leftButtonActive = false 
-                this.rightButtonActive = false
-                this.upButton.dataset.pressed = "false"
-                this.downButton.dataset.pressed = "false"
-                this.leftButton.dataset.pressed = "false"
-                this.rightButton.dataset.pressed = "false"
+                this.resetButtonState()
             }
         }
     }
 
     handleKeyUp(event) {
-        if (this.started) {
+        if (this.hasStarted) {
             // if the key then set value to false, otherwise set it to itself to preserve its value
             this.upKeyActive = (event.key === "ArrowUp" || event.key === "w") ? false: this.upKeyActive
             this.downKeyActive = (event.key === "ArrowDown" || event.key === "s") ? false: this.downKeyActive
@@ -184,58 +181,34 @@ class SnackmanGame {
     }
 
     handleUpButtonClick() {
-        if (this.started) {
-            // only accept inputs when game has started
+        if (this.hasStarted) {
+            this.resetButtonState()
             this.upButtonActive = !this.upButtonActive
-            this.downButtonActive = false 
-            this.leftButtonActive = false 
-            this.rightButtonActive = false
-            this.upButton.dataset.pressed = this.upButtonActive
-            this.downButton.dataset.pressed = "false"
-            this.leftButton.dataset.pressed = "false"
-            this.rightButton.dataset.pressed = "false"
+            this.upButton.dataset.pressed = !this.upButtonActive
         }
     }
 
     handleDownButtonClick() {
-        if (this.started) {
-            // only accept inputs when game has started
+        if (this.hasStarted) {
+            this.resetButtonState()
             this.downButtonActive = !this.downButtonActive
-            this.upButtonActive = false 
-            this.leftButtonActive = false 
-            this.rightButtonActive = false
-            this.downButton.dataset.pressed = this.downButtonActive
-            this.upButton.dataset.pressed = "false"
-            this.leftButton.dataset.pressed = "false"
-            this.rightButton.dataset.pressed = "false"
+            this.downButton.dataset.pressed = !this.downButtonActive
         }
     }
 
     handleLeftButtonClick() {
-        if (this.started) {
-            // only accept inputs when game has started
+        if (this.hasStarted) {
+            this.resetButtonState()
             this.leftButtonActive = !this.leftButtonActive
-            this.upButtonActive = false 
-            this.downButtonActive = false 
-            this.rightButtonActive = false
-            this.leftButton.dataset.pressed = this.leftButtonActive
-            this.upButton.dataset.pressed = "false"
-            this.downButton.dataset.pressed = "false"
-            this.rightButton.dataset.pressed = "false"
+            this.leftButton.dataset.pressed = !this.leftButtonActive
         }
     }
 
     handleRightButtonClick() {
-        if (this.started) {
-            // only accept inputs when game has started
+        if (this.hasStarted) {
+            this.resetButtonState()
             this.rightButtonActive = !this.rightButtonActive
-            this.upButtonActive = false 
-            this.downButtonActive = false 
-            this.leftButtonActive = false
-            this.rightButton.dataset.pressed = this.rightButtonActive
-            this.upButton.dataset.pressed = "false"
-            this.downButton.dataset.pressed = "false"
-            this.leftButton.dataset.pressed = "false"
+            this.rightButton.dataset.pressed = !this.rightButtonActive
         }
     }
 
@@ -255,7 +228,8 @@ class SnackmanGame {
     }
 
     handleNextLevelButtonClick() {
-        this.setPlayerLevel(this.playerLevel + 1, false)
+        this.incrementPlayerLevel()
+        this.setPlayerLevelInHTML()
         this.increaseDifficulty()
         this.resetState(this.mazeSize, this.mazeNumberOfEnemies, this.playerLevel, this.playerTotalScore)
         this.buildMaze()
@@ -277,9 +251,22 @@ class SnackmanGame {
         this.showStart()
     }
 
+    resetButtonState() {
+        // onscreen arrow states
+        this.upButtonActive = false 
+        this.downButtonActive = false 
+        this.leftButtonActive = false 
+        this.rightButtonActive = false
+
+        // this is to visibily seperate active/inactive buttons
+        this.upButton.dataset.pressed = "false"
+        this.downButton.dataset.pressed = "false"
+        this.leftButton.dataset.pressed = "false"
+        this.rightButton.dataset.pressed = "false"
+    }
+
     resetState(mazeSize=10, mazeNumberOfEnemies=1, playerLevel=1, playerTotalScore=0) {
-        // resets everything including event listeners, you could argue its overkill
-        // but I have done it just to ensure things shouldnt break
+        // resets everything
 
         // stop animating
         if (this.player != undefined) this.stopAnimation()
@@ -321,17 +308,11 @@ class SnackmanGame {
         this.points = [] // gets added later
         this.enemies = [] // gets added later
 
-        // event listener abort controllers
-        this.upButtonAbort = new AbortController()
-        this.downButtonAbort = new AbortController()
-        this.leftButtonAbort = new AbortController()
-        this.rightButtonAbort = new AbortController()
-        this.startButtonAbort = new AbortController()
-        this.restartButtonAbort = new AbortController()
-        this.nextLevelButtonAbort = new AbortController()
-        this.quitButtonAbort = new AbortController()
-        this.keyupAbort = new AbortController()
-        this.keydownAbort = new AbortController()
+        // this is to visibily seperate active/inactive buttons
+        this.upButton.dataset.pressed = "false"
+        this.downButton.dataset.pressed = "false"
+        this.leftButton.dataset.pressed = "false"
+        this.rightButton.dataset.pressed = "false"
 
         this.leaderboardData = [] // gets set later
 
@@ -346,8 +327,9 @@ class SnackmanGame {
         this.playerScore = 0
         this.playerTotalScore = playerTotalScore
 
-        this.setPlayerLevelInHTML(playerLevel)
-        this.setPlayerScoreInHTML(playerTotalScore)
+        this.setPlayerLevelInHTML()
+        this.setPlayerScoreInHTML()
+        this.setPlayerLifesInHTML()
 
         this.enemiesData = [] // gets set later
         this.enemiesMovingDuration = 500 // ms
@@ -366,7 +348,7 @@ class SnackmanGame {
         this.gameTickSpeed = 10 // ms
 
         this.blockSizeInPixels // gets set later
-        this.started = false
+        this.hasStarted = false
 
         // register debug methods to window for easy access from devtools
         window.debugGiveAllPoints = this.debugGiveAllPoints.bind(this)
@@ -656,41 +638,26 @@ class SnackmanGame {
         this.blockSizeInPixels = this.calculateBlockWidthInPixels()
     }
 
-    setPlayerScore(score, totalScore, inHtml=true) {
-        this.playerScore = score
-        this.playerTotalScore = totalScore
-        
-        if (inHtml) {
-            this.setPlayerScoreInHTML(totalScore)
-        }
+    incrementPlayerScore() {
+        this.playerScore++
+        this.playerTotalScore++
     }
 
-    setPlayerScoreInHTML(score) {
-        this.score.innerText = score
+    incrementPlayerLevel() {
+        this.playerLevel++
     }
 
-    setPlayerLevel(level, inHtml=true) {
-        this.playerLevel = level
-        
-        if (inHtml) {
-            this.setPlayerLevelInHTML(level)
-        }
+    setPlayerScoreInHTML() {
+        this.score.innerText = this.playerTotalScore
     }
 
-    setPlayerLevelInHTML(level) {
-        this.level.innerText = level
+    setPlayerLevelInHTML() {
+        this.level.innerText = this.playerLevel
     }
 
-    setPlayerLifes(lifes, inHtml=true) {
-        this.playerLifes = lifes
-
-        if (inHtml) {
-            this.setPlayerLifesInHTML(lifes + 1)
-        }
-    }
-
-    setPlayerLifesInHTML(lifes) {
-        this.lifesDisplay[lifes].classList.add("expended")
+    playerTakeLife() {
+        this.lifesDisplay[this.playerLifes].classList.add("expended")
+        this.playerLifes--
     }
 
     showStart() {
@@ -729,7 +696,7 @@ class SnackmanGame {
         const point = this.points[x][y]
         if (point !== undefined && !point.classList.contains("obtained")) {
             point.classList.add("obtained")
-            this.setPlayerScore(this.playerScore + 1, this.playerTotalScore + 1)
+            this.incrementPlayerScore()
         }
     }
 
@@ -759,11 +726,11 @@ class SnackmanGame {
 
         // .bind(this) ensures the context for `this` is correct
         this.gameTickInterval = setInterval(this.gameTick.bind(this), this.gameTickSpeed)        
-        this.started = true
+        this.hasStarted = true
     }
 
     finishGame(win) {
-        if (this.started) {
+        if (this.hasStarted) {
             // stop animating
             this.stopAnimation()
 
@@ -776,6 +743,21 @@ class SnackmanGame {
                 this.showRestart()
             }
         }
+    }
+
+    playerMoved() {
+        // no input will be accepted for however long `this.playerMovingDuration` is
+        this.playerMoving = true 
+        setTimeout(() => {
+            this.playerMoving = false
+        }, this.playerMovingDuration)
+    }
+
+    enemiesMoved() {
+        this.enemiesMoving = true 
+        setTimeout(() => {
+            this.enemiesMoving = false
+        }, this.enemiesMovingDuration)
     }
 
     gameTick() {
@@ -823,11 +805,7 @@ class SnackmanGame {
                 this.player.style.setProperty("--rotation", `${playerRotation}deg`)
 
                 if (playerMoving) {
-                    // no input will be accepted for however long `this.playerMovingDuration` is
-                    this.playerMoving = true 
-                    setTimeout(() => {
-                        this.playerMoving = false
-                    }, this.playerMovingDuration)
+                    this.playerMoved()
                 }
             }
         }
@@ -898,32 +876,22 @@ class SnackmanGame {
                 enemy.spacesLeft--
             }
 
-            this.enemiesMoving = true 
-            setTimeout(() => {
-                this.enemiesMoving = false
-            }, this.enemiesMovingDuration)
+            this.enemiesMoved()
         }
 
         // point detection
-        const pointWasObtained = this.setPointObtained(this.playerPosition[0], this.playerPosition[1])
-        if (pointWasObtained) {
-            this.playerScore++
-            this.playerTotalScore++
-            this.score.innerText = this.playerTotalScore
-        }
+        this.setPointObtained(this.playerPosition[0], this.playerPosition[1])
 
         // enemy hit processing
         if (!this.playerInvincible) {
             for (let enemy of this.enemiesData) {
                 if (enemy.position[0] === this.playerPosition[0] && enemy.position[1] === this.playerPosition[1]) {
-                    this.setPlayerLifes(this.playerLifes - 1)
-
+                    this.playerTakeLife()
                     if (this.playerLifes === 0) {
                         this.playerDead()
                     } else {
                         this.playerHit()
                     }
-
                     break
                 }
             }
