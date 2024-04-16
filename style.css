@@ -4,7 +4,10 @@
     --font-family: "Press Start 2P";
 
     --text-color: rgb(255, 255, 255);
-    --text-color-hover: rgba(255, 255, 255, 0.45);
+    --text-color-subtle: rgb(179, 179, 179);
+    --text-color-very-subtle: rgb(124, 124, 124);
+
+    --button-hover-opacity: 70%;
 
     --bg-color: rgb(0, 0, 0);
     --secondary-bg-color: rgba(20, 20, 20, 1);
@@ -39,9 +42,11 @@ body {
     grid-template-rows: auto;
     grid-template-areas: 
         "header header header"
-        "leaderboard main score"
-        "leaderboard main level"
-        "leaderboard main controls"
+        "leaderboard maze lives"
+        "leaderboard maze level"
+        "leaderboard maze score"
+        "leaderboard maze coins"
+        "leaderboard maze controls"
     ;
     align-items: center;
     justify-items: center;
@@ -56,77 +61,92 @@ header {
     }
 }
 
-.notificationContainer {
-    position: absolute;
+dialog[open] {
+    background-color: var(--secondary-bg-color);
+    z-index: 100;
+    border-radius: 20px;
+    padding: 30px;
     display: flex;
-    height: 100vh;
-    align-items: center;
-    justify-content: center;
+    height: fit-content;
+    cursor: default;
+    box-shadow: var(--box-shadow);
+    outline: none;
+    flex-direction: row;
+    border: none;
+    width: fit-content;
+    margin: auto;
+    max-width: 50%;
+}
 
-    & > div {
-        background-color: var(--secondary-bg-color);
-        z-index: 100;
-        border-radius: 20px;
-        padding: 25px 45px;
-        display: flex;
-        height: fit-content;
-        cursor: default;
-        box-shadow: var(--box-shadow);
-        outline: none;
+dialog[open] .container {
+    display: flex;
+    flex-direction: column;
+    margin-left: 35px;
+    gap: 30px;
+}
 
-        &.hidden {
-            display: none;
-        }
+dialog[open] .container .divider {
+    width: 100%;
+    height: 10px;
+    text-align: left;
+    font-size: 0.7rem;
+    color: var(--text-color-very-subtle);
+}
 
-        & > div {
-            display: flex;
-            flex-direction: column;
-            margin-left: 25px;
+dialog[open] .container .title {
+    font-size: 1.5rem;
+    text-decoration: underline 2px solid var(--text-color);
+}
 
-            & > .or {
-                width: 100%;
-                height: 10px;
-                text-align: left;
-                margin-top: 20px;
-                margin-bottom: 20px;
-                margin-left: 10px;
-            }
+dialog[open] .container button {
+    width: fit-content;
+    height: fit-content;
+    background: none;
+    cursor: pointer;
+    outline: none;
+    cursor: pointer;
+    color: var(--text-color);
+    border: none;
+    margin: 0px;
+    margin-top: auto;
+    margin-bottom: auto;
+    transition-duration: var(--hover-duration);
+}
 
-            & > button {
-                width: fit-content;
-                height: fit-content;
-                background: none;
-                cursor: pointer;
-                outline: none;
-                cursor: pointer;
-                color: var(--text-color);
-                border: none;
+dialog[open] .container button:hover {
+    opacity: var(--button-hover-opacity);
+}
 
-                &:hover > h1 {
-                    color: var(--text-color-hover);
-                }
+dialog[open] .container button .label {
+    text-align: left;
+    pointer-events: none;
+}
 
-                & > h1 {
-                    text-align: left;
-                    transition-duration: var(--hover-duration);
-                    font-size: 2em;
-                    text-decoration: none;
-                    margin-left: 10px;
-                    height: 48px;
-                    line-height: 48px;
-                }
-            }
-        }
-    }
+dialog[open] .container #shop-items button .label {
+    font-size: 1.2em;
+}
+
+dialog[open] .container button .description {
+    text-align: left;
+    line-height: 1.1rem;
+    font-size: 0.75rem;
+    color: var(--text-color-subtle);
+    pointer-events: none;
+}
+
+dialog[open] .container #shop-items {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
 }
 
 #maze {
     --maze-size: 10;
 
-    grid-area: main;
+    grid-area: maze;
     display: grid;
     grid-template-columns: repeat(var(--maze-size), calc(100% / var(--maze-size)));
-    grid-template-rows: repeat(var(--maze-size), calc(100% / var(--maze-size)));
+    grid-template-rows: min-content max-content max-content max-content;
     width: 80vh;
     height: 80vh;
     align-items: center;
@@ -140,7 +160,11 @@ header {
     
         &.player {
             --rotation: 0deg;
-
+            --starting-row: 0;
+            --starting-column: 0;
+            --row: 0;
+            --column: 0;
+            
             z-index: 2;
             top: 0;
             left: 0;
@@ -154,50 +178,98 @@ header {
             /* idk why but this makes snackman fit better */
             width: calc(100% - 2px);
             height: calc(100% - 2px);
+            top: calc(100% * calc(var(--row) - var(--starting-row)));
+            left: calc(100% * calc(var(--column) - var(--starting-column)));
 
-            &.mouth {
-                animation: mouthAnimation;
+            &[data-animated=true] {
+                animation: mouth-animation;
                 animation-duration: 800ms;
                 animation-timing-function: linear;
                 animation-iteration-count: infinite;
             }
     
-            &.dead {
-                animation: deathAnimation 1.5s ease-in-out forwards !important;
+            &[data-dead=true] {
+                animation: death-animation 1.5s ease-in-out forwards !important;
             }
             
-            &.hit {
-                animation: hitAnimation 1.5s ease-in-out !important;
+            &[data-hit=true] {
+                animation: hit-animation 1.5s ease-in-out !important;
             }
         }
     
         &.point {
             border-radius: 100%;
             background-color: var(--point-color);
-            height: 1vh;
-            width: 1vh;
+            height: 10%;
+            width: 10%;
             z-index: 0;
             opacity: 100%;
-            transition-property: top;
-            transition-duration: 100ms;
+            transition-duration: 300ms;
     
-            &.obtained {
+            &[data-collected=true] {
                 opacity: 0%;
             }
         }
         
+        &.coin {
+            height: 80%;
+            width: 80%;
+            z-index: 0;
+            opacity: 100%;
+            transition-duration: 300ms;
+            background-image: url(images/coin.png);
+            background-size: contain;
+
+            &[data-collected=true] {
+                opacity: 0%;
+            }
+        }
+
+        &.bomb {
+            height: 100%;
+            width: 100%;
+            z-index: 0;
+            opacity: 100%;
+            transition-duration: 300ms;
+            background-image: url(images/bomb.png);
+            background-size: contain;
+
+            &[data-detonated=true] {
+                opacity: 0%;
+            }
+        }
+
+        &.jelly {
+            height: 100%;
+            width: 100%;
+            z-index: 0;
+            opacity: 100%;
+            transition-duration: 300ms;
+            background-image: url(images/jelly.png);
+            background-size: contain;
+
+            &[data-eaten=true] {
+                opacity: 0%;
+            }
+        }
+
         &.enemy {
+            --starting-row: 0;
+            --starting-column: 0;
+            --row: 0;
+            --column: 0;
+
             z-index: 1;
             border-radius: 1000px;
             background: var(--enemy-color);
-            top: 0;
-            left: 0;
             transition-property: top, left;
             transition-duration: var(--move-speed);
 
             /* idk why but this makes snackman fit better */
             width: calc(100% - 2px);
             height: calc(100% - 2px);
+            top: calc(100% * calc(var(--row) - var(--starting-row)));
+            left: calc(100% * calc(var(--column) - var(--starting-column)));
         }
     
         &.wall {
@@ -209,26 +281,26 @@ header {
 
 /* Lives styling */
 .lives {
-    position: absolute;
-    top: 0;
-    right: 0;
-    height: auto;
-    display: flex;
+    height: fit-content;
     align-items: center;
     margin: 0.5em;
+    margin-bottom: auto;
+    grid-area: lives;
 
     & > ul {
         display: flex;
+        flex-direction: row;
+        margin: 0.25rem;
 
         & > li {
             list-style: none;
             background-color: var(--unexpended-life-color);
-            width: 2em;
-            height: 2em;
+            width: 2rem;
+            height: 2rem;
             border-radius: 100%;
             margin: 5px;
         
-            &.expended {
+            &[data-used=true] {
                 background-color: var(--expended-life-color);
             }
         }
@@ -237,14 +309,38 @@ header {
 
 .score {
     grid-area: score;
+    height: fit-content;
+    margin-bottom: auto;
 }
 
 .level {
     grid-area: level;
+    height: fit-content;
+    margin-bottom: auto;
+}
+
+.coins {
+    grid-area: coins;
+    height: fit-content;
+    margin-bottom: auto;
+}
+
+.display-title {
+    font-size: 1.25em;
+    text-decoration: underline;
+    text-align: center;
+}
+
+.display-text {
+    margin: 0.5em;
+    font-size: 2em;
+    text-align: center;
 }
 
 .leaderboard {
     grid-area: leaderboard;
+    height: fit-content;
+    margin-bottom: auto;
 
     & > ol {
         margin-top: 1em;
@@ -260,21 +356,6 @@ header {
             white-space: nowrap;
             overflow: hidden;
         }
-    }
-}
-
-div {
-    height: 100%;
-    text-align: center;
-
-    h1 {
-        font-size: 1.25em;
-        text-decoration: underline;
-    }
-
-    p {
-        margin: 0.5em;
-        font-size: 2em;
     }
 }
 
@@ -302,10 +383,10 @@ div {
         box-shadow: var(--box-shadow);
 
         &:hover {
-            color: var(--text-color-hover);
+            color: var(--text-color-very-subtle);
         }
 
-        &[data-pressed=true] {
+        &[data-active=true] {
             background-color: var(--tertiary-bg-color);
         }
 
@@ -345,14 +426,13 @@ div {
 }
 
 img.logo {
-    margin-top: auto;
     margin-bottom: auto;
     height: 48px;
     width: 48px;
     padding: 0; 
 }
 
-@keyframes deathAnimation {
+@keyframes death-animation {
     0% {
         transform: rotate(var(--rotation)) scale(1);
     }
@@ -364,7 +444,7 @@ img.logo {
     }
 }
 
-@keyframes hitAnimation {
+@keyframes hit-animation {
     0%, 100% {
         background: var(--snackman-color);
         transform: rotate(var(--rotation)) scale(1);
@@ -375,7 +455,7 @@ img.logo {
     }
 }
 
-@keyframes mouthAnimation {
+@keyframes mouth-animation {
     0% {
         clip-path: var(--snackman-mouth);
     }

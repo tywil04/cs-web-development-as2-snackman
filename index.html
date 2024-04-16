@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         
         <link rel="stylesheet" href="style.css">
-        <link rel="shortcut icon" href="images/favicon.png" type="image/x-icon">
+        <link rel="shortcut icon" href="images/snackman.png" type="image/x-icon">
 
         <title>AS2 | Snack Man!</title>
     </head>
@@ -14,35 +14,8 @@
             <h1>Snack Man!</h1>
         </header>
 
-        <div class="notificationContainer">
-            <div class="startButton" id="startButtonRoot">
-                <img class="logo" src="images/favicon.png"></img>
-                <div>
-                    <button id="startButton"><h1>Start!</h1></button>
-                </div>
-            </div>
-            
-            <div class="restartButton hidden" id="restartButtonRoot">
-                <img class="logo" src="images/favicon.png"></img>
-                <div>
-                    <button id="restartButton"><h1>Restart?</h1></button>
-                </div>
-            </div>
-
-            <div class="nextLevelButton hidden" id="nextLevelOrQuitButtonRoot">
-                <img class="logo" src="images/favicon.png"></img>
-                <div>
-                    <button id="nextLevelButton"><h1>Next Level?</h1></button>
-
-                    <div class="or">OR</div>
-
-                    <button id="quitButton"><h1>Quit?</h1></button>
-                </div>
-            </div>
-        </div>
-
         <div class="leaderboard">
-            <h1>LeaderBoard:</h1>
+            <h1 class="display-title">LeaderBoard:</h1>
             <ol id="leaderboard"></ol>
         </div>
 
@@ -50,29 +23,68 @@
         </main>
 
         <div class="lives">
-            <h1>Lives:</h1>
-            <ul id="lives"></ul>
-        </div>
-
-        <div class="score">
-            <h1>Score:</h1>
-            <p id="score">0</p>
+            <h1 class="display-title">Lives:</h1>
+            <ul class="display-text" id="lives"></ul>
         </div>
 
         <div class="level">
-            <h1>Level:</h1>
-            <p id="level">1</p>
+            <h1 class="display-title">Level:</h1>
+            <p class="display-text" id="level"></p>
+        </div>
+
+        <div class="score">
+            <h1 class="display-title">Score:</h1>
+            <p class="display-text" id="score"></p>
+        </div>
+
+        <div class="coins">
+            <h1 class="display-title">Coins:</h1>
+            <p class="display-text" id="coins"></p>
         </div>
 
         <div class="controls">
-            <button id="upButton">▲</button>
-            <button id="downButton">▼</button>
-            <button id="leftButton">◀</button>
-            <button id="rightButton">▶</button>
+            <button id="up-button">▲</button>
+            <button id="down-button">▼</button>
+            <button id="left-button">◀</button>
+            <button id="right-button">▶</button>
             <div class="middle"></div>
         </div>
 
-        <!-- move this after all the content so it gets loaded last -->
+        <dialog id="start-dialog">
+            <img class="logo" src="images/snackman.png"></img>
+            <div class="container">
+                <button id="start-dialog:start">
+                    <h1 class="label">Start!</h1>
+                </button>
+            </div>
+        </dialog>
+        
+        <dialog id="restart-dialog">
+            <img class="logo" src="images/snackman.png"></img>
+            <div class="container">
+                <button id="restart-dialog:restart">
+                    <h1 class="label">Restart?</h1>
+                </button>
+            </div>
+        </dialog>
+
+        <dialog id="shop-dialog">
+            <img class="logo" src="images/snackman.png"></img>
+            <div class="container">
+                <h1 class="title">Level <span id="shop-level-display"></span> Complete!</h1>
+
+                <div class="divider">PURCHASE 1 ITEM FROM THE SHOP AND CONTINUE</div>
+
+                <section id="shop-items"></section>
+
+                <div class="divider">OR</div>
+
+                <button id="shop-dialog:continue">
+                    <h1 class="label">Continue Without Shopping</h1>
+                </button>
+            </div>
+        </dialog>
+
         <script src="script.js"></script>
     </body>
 </html>
