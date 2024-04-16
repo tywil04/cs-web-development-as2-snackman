@@ -112,6 +112,7 @@ const settings = {
         }
     }
 }
+Object.freeze(settings) // in js const means a constant pointer, not a constant value so in this case freeze it
 
 const mazeCodes = {
     wall: 1,
@@ -122,6 +123,7 @@ const mazeCodes = {
     jelly: 5,
     bomb: 6,
 }
+Object.freeze(mazeCodes) // in js const means a constant pointer, not a constant value so in this case freeze it
 
 const shopItems = [
     {
@@ -167,6 +169,7 @@ const shopItems = [
         price: 5,
     }
 ]
+Object.freeze(shopItems) // in js const means a constant pointer, not a constant value so in this case freeze it
 
 const defaultData = {
     inputs: {
@@ -277,6 +280,7 @@ const defaultData = {
         },
     }
 }
+Object.freeze(defaultData) // in js const means a constant pointer, not a constant value so in this case freeze it
 
 const elements = {
     get maze() {                      
@@ -349,8 +353,9 @@ const elements = {
         return document.querySelector(".jelly")
     },
 }
+Object.freeze(elements) // in js const means a constant pointer, not a constant value so in this case freeze it
 
-let data 
+let data = {}
 
 function handleStartDialogStart(e) {
     resetState()
@@ -390,7 +395,7 @@ function handleShopPurchase(e) {
 }
 
 function handleKeyDown(e) {
-    if (!data.game?.started) {
+    if (!data?.game?.started) {
         return
     }
 
@@ -424,7 +429,7 @@ function handleKeyDown(e) {
 }
 
 function handleKeyUp(e) {
-    if (!data.game?.started) {
+    if (!data?.game?.started) {
         return
     }
 
@@ -446,7 +451,7 @@ function handleKeyUp(e) {
 }
 
 function handleTouchButtonClick(e) {
-    if (!data.game?.started) {
+    if (!data?.game?.started) {
         return
     }
 
@@ -841,23 +846,14 @@ function resetState(fullReset=true) {
 
     if (fullReset) {
         data = {}
-        data.inputs = defaultData.inputs
-        data.player = defaultData.player
-        data.enemies = defaultData.enemies
-        data.points = defaultData.points
-        data.leaderboard = defaultData.leaderboard
-        data.level = defaultData.level
-        data.maze = defaultData.maze
-        data.game = defaultData.game
-        data.coins = defaultData.coins
-        data.upgrades = defaultData.upgrades
+        data = structuredClone(defaultData)
     } else {
         data.player.moving = false 
         data.player.invincible = false
-        data.enemies = defaultData.enemies
-        data.points = defaultData.points
-        data.level = defaultData.level
-        data.coins = defaultData.coins
+        data.enemies = structuredClone(defaultData.enemies)
+        data.points = structuredClone(defaultData.points)
+        data.level = structuredClone(defaultData.level)
+        data.coins = structuredClone(defaultData.coins)
     }
 }
 
@@ -1281,7 +1277,6 @@ function loadSnackman() {
     document.addEventListener("keyup", handleKeyUp)
     document.addEventListener("keydown", handleKeyDown)  
     
-    console.log(elements)
     elements.touchUpButton.addEventListener("click", handleTouchButtonClick)
     elements.touchDownButton.addEventListener("click", handleTouchButtonClick)
     elements.touchLeftButton.addEventListener("click", handleTouchButtonClick)
@@ -1290,8 +1285,6 @@ function loadSnackman() {
     elements.startDialogStartButton.addEventListener("click", handleStartDialogStart)
     elements.restartDialogRestartButton.addEventListener("click", handleRestartDialogRestart)
     elements.shopDialogContinueButton.addEventListener("click", handleShopDialogContinue)
-    
-    resetState()
     
     constructLeaderboard()
     
@@ -1304,3 +1297,5 @@ function loadSnackman() {
 }
 
 document.addEventListener("DOMContentLoaded", loadSnackman)
+
+resetState()
