@@ -20,8 +20,10 @@
     --snackman-mouth: polygon(100% -10%, 0% -10%, 0% 110%, 100% 110%, 100% 75%, 50% 50%, 100% 25%);
     --snackman-color: rgb(255, 204, 0);
     --snackman-hit-color: rgb(255, 0, 0);
-    --enemy-color: rgb(0, 128, 0);
-    --move-speed: 500ms;
+    --grunt-color: rgb(0, 128, 0);
+    --witch-color: purple;
+    --robber-color: darkgrey;
+    --crusher-color: red;
 
     --hover-duration: 100ms;
     --box-shadow: rgba(0, 0, 0, 0.2) 0px 12px 28px 0px, rgba(0, 0, 0, 0.1) 0px 2px 4px 0px, rgba(255, 255, 255, 0.05) 0px 0px 0px 1px inset;
@@ -164,6 +166,7 @@ dialog[open] .container #shop-items {
             --starting-column: 0;
             --row: 0;
             --column: 0;
+            --move-speed: 0ms;
             
             z-index: 2;
             top: 0;
@@ -253,15 +256,76 @@ dialog[open] .container #shop-items {
             }
         }
 
-        &.enemy {
+        &.grunt {
             --starting-row: 0;
             --starting-column: 0;
             --row: 0;
             --column: 0;
+            --move-speed: 0ms;
 
             z-index: 1;
             border-radius: 1000px;
-            background: var(--enemy-color);
+            background: var(--grunt-color);
+            transition-property: top, left;
+            transition-duration: var(--move-speed);
+
+            /* idk why but this makes snackman fit better */
+            width: calc(100% - 2px);
+            height: calc(100% - 2px);
+            top: calc(100% * calc(var(--row) - var(--starting-row)));
+            left: calc(100% * calc(var(--column) - var(--starting-column)));
+        }
+
+        &.witch {
+            --starting-row: 0;
+            --starting-column: 0;
+            --row: 0;
+            --column: 0;
+            --move-speed: 0ms;
+
+            z-index: 1;
+            border-radius: 1000px;
+            background: var(--witch-color);
+            transition-property: top, left;
+            transition-duration: var(--move-speed);
+
+            /* idk why but this makes snackman fit better */
+            width: calc(100% - 2px);
+            height: calc(100% - 2px);
+            top: calc(100% * calc(var(--row) - var(--starting-row)));
+            left: calc(100% * calc(var(--column) - var(--starting-column)));
+        }
+
+        &.robber {
+            --starting-row: 0;
+            --starting-column: 0;
+            --row: 0;
+            --column: 0;
+            --move-speed: 0ms;
+
+            z-index: 1;
+            border-radius: 1000px;
+            background: var(--robber-color);
+            transition-property: top, left;
+            transition-duration: var(--move-speed);
+
+            /* idk why but this makes snackman fit better */
+            width: calc(100% - 2px);
+            height: calc(100% - 2px);
+            top: calc(100% * calc(var(--row) - var(--starting-row)));
+            left: calc(100% * calc(var(--column) - var(--starting-column)));
+        }
+
+        &.crusher {
+            --starting-row: 0;
+            --starting-column: 0;
+            --row: 0;
+            --column: 0;
+            --move-speed: 0ms;
+
+            z-index: 1;
+            border-radius: 1000px;
+            background: var(--crusher-color);
             transition-property: top, left;
             transition-duration: var(--move-speed);
 
