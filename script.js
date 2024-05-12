@@ -158,16 +158,21 @@ const config = {
         grunt: {
             // deals -1 lives, deals 0 coins
             movingSpeed: 500, // in ms
+            damagedDuration: 4000,
             lives: -1,
             coins: 0,
             mazeCode: 3,
             startingNumberOf: 1,
             class: "grunt",
+            incrementEnemyCount() {
+                return (global.player.level % 2) === 0
+            },
         },
 
         witch: {
             // deals either -1 or +1 lives, deals 0 coins
             movingSpeed: 500, // in ms
+            damagedDuration: 4000,
             get lives() {
                 const rand = randomInt(0, 1)
                 if (rand === 1) {
@@ -180,11 +185,15 @@ const config = {
             mazeCode: 7,
             startingNumberOf: 0,
             class: "witch",
+            incrementEnemyCount() {
+                return (global.player.level % 4) === 0
+            },
         },
 
         robber: {
             // deals 0 lives, deals -1 to -5 coins
             movingSpeed: 500, // in ms
+            damagedDuration: 3000,
             lives: 0,
             get coins() {
                 return -randomInt(1, 5)
@@ -192,16 +201,23 @@ const config = {
             mazeCode: 8,
             startingNumberOf: 0,
             class: "robber",
+            incrementEnemyCount() {
+                return (global.player.level % 3) === 0
+            },
         },
 
         crusher: {
             // deals -2 lives, deals 0 coins
             movingSpeed: 1000, // in ms
+            damagedDuration: 6250,
             lives: -2,
             coins: 0,
             mazeCode: 9,
             startingNumberOf: 0,
             class: "crusher",
+            incrementEnemyCount() {
+                return (global.player.level % 5) === 0
+            },
         }
     },
 
@@ -210,21 +226,17 @@ const config = {
             name: "Shield",
             description: "A shield that allows you to withstand one collision with an enemy without taking a life. Lasts until used.",
             price: 15, // coins
-            buy(global, level) {
+            buy() {
                 global.upgrades.shield.bought = true
             },
-            bought(global, level) {
+            bought() {
                 return global.upgrades.shield.bought
             },
-            available(global, level) {
+            available() {
                 return !global.upgrades.shield.bought
             },
-            onPlayerDamage(global, level, damage) {
-                if (global.upgrades.shield.bought) {
-                    global.upgrades.shield.bought = false
-                    return 0
-                }
-                return damage
+            onPlayerDamage(damage) {
+                return 0
             },
         },
     
@@ -232,21 +244,41 @@ const config = {
             name: "Point Doubler",
             description: `Every point you collect is worth double. Used when next level is started.`,
             price: 25, // coins
-            buy(global, level) {
+            buy() {
                 global.upgrades.pointDoubler.bought = true
             },
-            bought(global, level) {
+            bought() {
                 return global.upgrades.pointDoubler.bought
             },
-            available(global, level) {
+            available() {
                 return !global.upgrades.pointDoubler.bought
             },
-            onRoundEnd(global, level) {
+            onRoundEnd() {
                 global.upgrades.pointDoubler.bought = false
             },
-            onPlayerPoints(global, level, points) {
-                console.log(points)
+            onPlayerPoints(points) {
                 return points * 2
+            },
+        },
+
+        coinDoubler: {
+            name: "Coin Doubler",
+            description: `Every coin you collect is worth double. Used when next level is started.`,
+            price: 30,
+            buy() {
+                global.upgrades.coinDoubler.bought = true
+            },
+            bought() {
+                return global.upgrades.coinDoubler.bought
+            },
+            available() {
+                return !global.upgrades.coinDoubler.bought
+            },
+            onRoundEnd() {
+                global.upgrades.coinDoubler.bought = false
+            },
+            onPlayerCoins(coins) {
+                return coins * 2
             },
         },
     
@@ -254,63 +286,21 @@ const config = {
             name: "Regeneration",
             description: "Your lives will be reset back to full. Used when next level is started.",
             price: 30,
-            buy(global, level) {
+            buy() {
                 global.upgrades.regeneration.bought = true
             },
-            bought(global, level) {
+            bought() {
                 return global.upgrades.regeneration.bought
             },
-            available(global, level) {
+            available() {
                 return !global.upgrades.regeneration.bought
             },
-            onRoundEnd(global, level) {
+            onRoundEnd() {
                 global.upgrades.regeneration.bought = false
             },
-            onRoundStart(global, level) {
+            onRoundStart() {
                 global.player.lives = config.player.startingLives
             },
-        },
-    
-        jelly: {
-            name: "Jelly",
-            description: "Randomly spawns a plate of jelly that causes enemies to get stuck for 5 seconds. If you encounter the jelly you eat it and its remove it from the maze. Used when next level is started.",
-            price: 10,
-            mazeCode: 5,
-            bought: false,
-            numberOf: 1,
-            class: "jelly",
-            buy(global, level) {
-                global.upgrades.jelly.bought = true
-            },
-            bought(global, level) {
-                return global.upgrades.jelly.bought
-            },
-            available(global, level) {
-                return !global.upgrades.jelly.bought
-            },
-            onRoundEnd(global, level) {
-                global.upgrades.jelly.bought = false
-            },
-            onPlayerHit(global, level) {
-                // if hit the player cannot move for 2 seconds and no lives added, its not removed afterwards
-                level.player.canMove = false
-    
-                setTimeout(() => {
-                    level.player.canMove = true
-                }, 2000)
-    
-                return [0, false]
-            },
-            onEnemyHit(global, enemy) {
-                // if an enemy hits it cannot move for 5 seconds. its not removed afterwards
-                enemy.canMove = false 
-    
-                setTimeout(() => {
-                    enemy.canMove = true
-                }, 5000)
-    
-                return false
-            }
         },
     
         bomb: {
@@ -321,38 +311,41 @@ const config = {
             mazeCode: 6,
             numberOf: 1,
             class: "bomb",
-            buy(global, level) {
-                data.upgrades.bomb.bought = true
+            buy() {
+                global.upgrades.bomb.bought = true
+                global.upgrades.bomb.detonated = []
             },
-            bought(global, level) {
+            bought() {
                 return global.upgrades.bomb.bought
             },
-            available(global, level) {
-                return !data.upgrades.bomb.bought
+            available() {
+                return !global.upgrades.bomb.bought
             },
-            onRoundEnd(global, level) {
-                data.upgrades.bomb.bought = false
+            onRoundEnd() {
+                global.upgrades.bomb.bought = false
             },
-            onPlayerHit(global, level) {
+            onPlayerHit(element, position) {
                 // if hit the player cannot move for 2 seconds and -1 lives added, its removed afterwards
-                data.player.canMove = false
+                if (global.upgrades.bomb.detonated.includes(`${position[0]},${position[1]}`)) {
+                    return 0
+                }
+                
+                element.dataset.detonated = true
+                global.upgrades.bomb.detonated.push(`${position[0]},${position[1]}`)
     
-                setTimeout(() => {
-                    data.player.canMove = true
-                }, 2000)
-    
-                return [-1, true]
+                return -1
             },
-            onEnemyHit(data, enemy) {
+            onEnemyHit(element, enemy, position) {
                 // if an enemy hits it cannot move for 5 seconds. its removed afterwards
-                enemy.canMove = false 
-    
-                setTimeout(() => {
-                    enemy.canMove = true
-                }, 5000)
+                if (global.upgrades.bomb.detonated.includes(`${position[0]},${position[1]}`)) {
+                    return false
+                }
+
+                element.dataset.detonated = true
+                global.upgrades.bomb.detonated.push(`${position[0]},${position[1]}`)
     
                 return true
-            }
+            },
         }
     },
 
@@ -481,14 +474,9 @@ const defaultLevel = {
                 //     lastDirection: [row, col],
                 //     position: [row, col],
                 //     canMove: false,
+                //     timeout: null,
                 // }
             ]
-        }
-        for (const [id, enemy] of Object.entries(config.enemies)) {
-            enemies[id] = {
-                canMove: true,
-                timeout: null,
-            }
         }
         return enemies
     },
@@ -505,6 +493,7 @@ const defaultLevel = {
 
     player: {
         canMove: true,
+        canBeDamaged: true,
         timeout: null,
         position: [0, 0],
         element: null,
@@ -532,17 +521,17 @@ const elements = {
     get restartDialogRestartButton() {   
         return document.getElementById("restart-dialog:restart")
     },
-    get shopDialog() {                   
-        return document.getElementById("shop-dialog")
+    get upgradeDialog() {                   
+        return document.getElementById("upgrade-dialog")
     },
-    get shopDialogContinueButton() {     
-        return document.getElementById("shop-dialog:continue")
+    get upgradeDialogContinueButton() {     
+        return document.getElementById("upgrade-dialog:continue")
     },
-    get shopDialogItemsContainer() {     
-        return document.getElementById("shop-items")
+    get upgradeDialogItemsContainer() {     
+        return document.getElementById("upgrade-items")
     },
-    get shopDialogLevelDisplay() {       
-        return document.getElementById("shop-level-display")
+    get upgradeDialogLevelDisplay() {       
+        return document.getElementById("upgrade-level-display")
     },
     get touchUpButton() {                
         return document.getElementById("up-button")
@@ -588,30 +577,30 @@ function handleRestartDialogRestart(e) {
     elements.restartDialog.close()
 }
 
-function handleShopDialogContinue(e) {
+function handleUpgradeDialogContinue(e) {
     resetState(false)
     startGame()
-    elements.shopDialog.close()
+    elements.upgradeDialog.close()
 }
 
-// function handleShopPurchase(e) {
-//     const item = shopItems[e.target.dataset.itemIndex]
+function handleUpgradePurchase(e) {
+    const upgrade = config.upgrades[e.target.dataset.upgradeId]
 
-//     if (data.player.coins < item.price) {
-//         alert("Failed to purchase item because you don't have enough coins.")
-//         return
-//     }
+    if (global.player.coins < item.price) {
+        alert("Failed to purchase item because you don't have enough coins.")
+        return
+    }
 
-//     data.player.coins -= item.price
-//     data.upgrades[item.id].owned = true
+    global.player.coins -= item.price
+    upgrade.buy()
 
-//     alert("Successfully purchased item!")
+    alert("Successfully purchased item!")
 
-//     resetState(false)
-//     startGame()
+    resetState(false)
+    startGame()
 
-//     elements.shopDialog.close()
-// }
+    elements.upgradeDialog.close()
+}
 
 function handleKeyDown(e) {
     if (!global?.game?.started) {
@@ -778,12 +767,12 @@ function generateMaze() {
         maze[location[0]][location[1]] = config.coins.mazeCode
     }
 
-    for (const [upgradeId, upgrade] of Object.entries(config.upgrades)) {
+    for (const upgrade of Object.values(config.upgrades)) {
         if (!upgrade.mazeCode) {
             continue
         }
 
-        if (!global.upgrades[upgradeId].bought) {
+        if (!upgrade.bought()) {
             continue
         }
 
@@ -918,13 +907,14 @@ function constructMaze() {
     elements.maze.innerHTML = ""
     elements.maze.style.setProperty("--maze-size",  global.maze.size)
 
-    const enemies = []
-    const coins = []
-    const points = []
-    const upgrades = []
+    const enemies = {}
+    const coins = {}
+    const points = {}
+    const upgrades = {}
     let player
 
     for (let row = 0; row < global.maze.size; row++) {
+        forCol:
         for (let col = 0; col < global.maze.size; col++) {
             let block
 
@@ -935,20 +925,20 @@ function constructMaze() {
                 }
                 case config.points.mazeCode: {
                     block = constructPoint()
-                    points.push({
+                    points[`${row},${col}`] = {
                         element: block,
                         position: [row, col],
                         collected: false,
-                    })
+                    }
                     break
                 }
                 case config.coins.mazeCode: {
                     block = constructCoin()
-                    coins.push({
+                    coins[`${row},${col}`] = {
                         element: block,
                         position: [row, col],
                         collected: false,
-                    })
+                    }
                     break
                 }
                 case config.player.mazeCode: {
@@ -961,13 +951,14 @@ function constructMaze() {
                     for (const [enemyId, enemy] of Object.entries(config.enemies)) {
                         if (level.maze.maze[row][col] === enemy.mazeCode) {
                             block = constructEnemy([row, col], enemyId, enemy)
-                            enemies.push({
+                            enemies[`${row},${col}`] = {
                                 element: block,
                                 type: enemyId,
                                 lastDirection: [0, 0],
                                 position: [row, col],
-                                canMove: false,
-                            }) 
+                                canMove: true,
+                                timeout: null,
+                            }
                             wasEnemy = true
                             break
                         }
@@ -975,13 +966,13 @@ function constructMaze() {
 
                     if (!wasEnemy) {
                         for (const [upgradeId, upgrade] of Object.entries(config.upgrades)) {
-                            if (level.maze.maze[row][col] === upgrade?.mazeCode) {
+                            if (level.maze.maze[row][col] === upgrade?.mazeCode && upgrade.bought()) {
                                 block = constructUpgrade(upgrade)
-                                upgrades.push({
+                                upgrades[`${row},${col}`] = {
                                     element: block,
                                     type: upgradeId,
                                     position: [row, col]
-                                })
+                                }
                                 break
                             }
                         }
@@ -1046,29 +1037,184 @@ function constructLives() {
     }
 }
 
-function addCoins(coins) {
+function constructUpgradeDialog() {
+    elements.upgradeDialogItemsContainer.innerHTML = ""
+
+    elements.upgradeDialogLevelDisplay.innerText = global.player.level
+
+    const nonPurchased = []
     for (const [upgradeId, upgrade] of Object.entries(config.upgrades)) {
-        if (upgrade.bought(global, level)) {
-            coins = upgrade.onPlayerCoins?.(global, level, coins)
+        if (upgrade.available()) {
+            nonPurchased.push({
+                ...upgrade,
+                id: upgradeId,
+            })
+        }
+    }
+
+    const used = []
+    for (let i = 0; i < Math.min(3, nonPurchased.length); i++) {
+        let index = randomInt(0, nonPurchased.length - 1)
+        while (used.includes(index)) {
+            index = randomInt(0, nonPurchased.length - 1)
+        }
+        used.push(index)
+
+        const container = document.createElement("button")
+        container.dataset.upgradeId = nonPurchased[index].id 
+        container.addEventListener("click", handleUpgradePurchase)
+
+        const label = document.createElement("h1")
+        label.classList.add("label")
+        label.innerText = `${nonPurchased[index].name} [${nonPurchased[index].price} Coins]`
+        container.appendChild(label)
+
+        const description = document.createElement("p")
+        description.classList.add("description")
+        description.innerText = `${nonPurchased[index].description}`
+        container.appendChild(description)
+
+        elements.upgradeDialogItemsContainer.appendChild(container)
+    }
+
+    if (nonPurchased.length === 0) {
+        const p = document.createElement("p")
+        p.innerText = "No items avaliable to purchase."
+        elements.upgradeDialogItemsContainer.appendChild(p)
+    }
+}
+
+function incrementDifficulty() {
+    global.maze.size++ 
+
+    for (const [enemyId, enemy] of Object.entries(config.enemies)) {
+        if (enemy.incrementEnemyCount?.()) {
+            global.enemies[enemyId].numberOf++
+        }
+    }
+}
+
+function addCoins(coins) {
+    for (const upgrade of Object.values(config.upgrades)) {
+        if (upgrade.bought() && upgrade.onPlayerCoins) {
+            coins = upgrade.onPlayerCoins(coins)
         }
     }
 
     global.player.coins += coins
+    if (global.player.coins < 0) {
+        global.player.coins = 0
+    }
     
     elements.coins.innerText = global.player.coins
 }
 
 function addPoints(points) {
-    for (const [upgradeId, upgrade] of Object.entries(config.upgrades)) {
-        if (upgrade.bought(global, level)) {
-            points = upgrade.onPlayerPoints?.(global, level, points)
+    let totalPoints = points
+    for (const upgrade of Object.values(config.upgrades)) {
+        if (upgrade.bought() && upgrade.onPlayerPoints) {
+            totalPoints = upgrade.onPlayerPoints(totalPoints)
         }
     }
 
-    global.player.totalScore += points
+    global.player.totalScore += totalPoints
     level.score += points
 
     elements.score.innerText = global.player.totalScore
+}
+
+function addLives(lives) {
+    if (!level.player.canBeDamaged) {
+        return
+    }
+
+    let totalDamage = lives
+    for (const upgrade of Object.values(config.upgrades)) {
+        if (upgrade.bought() && upgrade.onPlayerDamage) {
+            totalDamage = upgrade.onPlayerDamage(totalDamage)
+        }
+    }
+
+    global.player.lives += totalDamage
+    if (global.player.lives < 0) {
+        global.player.lives = 0
+    }
+
+    constructLives()
+}
+
+function hitPlayer(lives, coins) {
+    if (!level.player.canBeDamaged) {
+        return
+    }
+
+    addLives(lives)
+    addCoins(coins)
+
+    if (global.player.lives > 0) {
+        level.player.element.dataset.hit = true
+        level.player.canBeDamaged = false 
+        level.player.canMove = false
+        clearTimeout(level.player.timeout)
+
+        setTimeout(() => {
+            level.player.canBeDamaged = true
+            level.player.element.dataset.hit = false
+            level.player.canMove = true
+        }, config.player.invincibleDuration)
+    } else {
+        level.player.element.dataset.dead = true
+        level.player.canBeDamaged = false 
+        level.player.canMove = false
+        clearTimeout(level.player.timeout)
+
+        setTimeout(() => {
+            endGame(false)
+        }, config.player.invincibleDuration)
+    }  
+}
+
+function hitEnemy(enemy) {
+    enemy.canMove = false 
+    enemy.element.dataset.hit = true
+    clearTimeout(enemy.timeout)
+
+    setTimeout(() => {
+        enemy.canMove = true
+        enemy.element.dataset.hit = false
+    }, config.enemies[enemy.type].damagedDuration)
+}
+
+function attemptCollectCoin(position) {
+    const coin = level.coins.spawned[`${position[0]},${position[1]}`]
+
+    if (!coin) {
+        return
+    }
+
+    if (coin.collected) {
+        return
+    }
+
+    coin.element.dataset.collected = true 
+    coin.collected = true
+    addCoins(1)
+}
+
+function attemptCollectPoint(position) {
+    const point = level.points.spawned[`${position[0]},${position[1]}`]
+
+    if (!point) {
+        return
+    }
+
+    if (point.collected) {
+        return
+    }
+
+    point.element.dataset.collected = true
+    point.collected = true 
+    addPoints(1)
 }
 
 function tickPlayerMovement() {
@@ -1106,31 +1252,28 @@ function tickPlayerMovement() {
         return
     }
 
-    // for (const enemy of data.enemies.enemies) {
-    //     if (enemy.position[0] === newRow && enemy.position[1] == newCol) {
-    //         hitPlayer(enemy.type)
-    //         break
-    //     }
-    // }
+    for (const upgrade of Object.values(config.upgrades)) {
+        if (!upgrade.mazeCode || block !== upgrade.mazeCode) {
+            continue
+        }
 
-    // if (
-    //     data.upgrades.bomb.position[0] === newRow && 
-    //     data.upgrades.bomb.position[1] === newCol && 
-    //     !data.upgrades.bomb.detonated
-    // ) {
-    //     damagePlayer(settings.upgrades.bomb.damage)
-    //     elements.bomb.dataset.detonated = true
-    //     data.upgrades.bomb.detonated = true
-    // }
+        if (!upgrade.bought()) {
+            continue
+        }
 
-    // if (
-    //     data.upgrades.jelly.position[0] === newRow && 
-    //     data.upgrades.jelly.position[1] === newCol &&
-    //     !data.upgrades.jelly.eaten
-    // ) {
-    //     elements.jelly.dataset.eaten = true
-    //     data.upgrades.jelly.eaten = true
-    // }
+        const lupgrade = level.upgrades.spawned[`${newRow},${newCol}`]
+        const damage = upgrade.onPlayerHit?.(lupgrade.element, [newRow, newCol])
+        damagePlayer(damage)
+
+        break
+    }
+
+    for (const enemy of Object.values(level.enemies.spawned)) {
+        if (level.player.position[0] === enemy.position[0] && level.player.position[1] === enemy.position[1]) {
+            hitPlayer(config.enemies[enemy.type].lives, config.enemies[enemy.type].coins)
+            break
+        }
+    }
 
     if (searchDirection[0] !== 0) {
         level.player.element.style.setProperty("--row", newRow)
@@ -1142,18 +1285,154 @@ function tickPlayerMovement() {
 
     level.player.position = [newRow, newCol]
 
-    level.player.canMove = false
-    level.player.timeout = setTimeout(() => {
-        level.player.canMove = true
-    }, config.player.movingSpeed)
+    if (level.player.canMove) {
+        level.player.canMove = false
+        level.player.timeout = setTimeout(() => {
+            level.player.canMove = true
+        }, config.player.movingSpeed)
+    }
+}
+
+function tickEnemyMovement() {
+    for (const enemy of Object.values(level.enemies.spawned)) {
+        if (!enemy.canMove) {
+            continue
+        }
+
+        // makes the enemy most likely to continue on its current path, makes it very rare it goes back the way it came
+        const probabilityMatrices = {
+            "-1,0": [
+                [-1,0], [-1,0], [-1,0], [-1,0], [-1,0], [-1,0], [-1,0], [-1,0], [-1,0], [-1,0], [-1,0], [-1,0],
+                [+1,0],
+                [0,-1], [0,-1], [0,-1], [0,-1],
+                [0,+1], [0,+1], [0,+1], [0,+1],
+            ],
+            "1,0": [
+                [-1,0],
+                [+1,0], [+1,0], [+1,0], [+1,0], [+1,0], [+1,0], [+1,0], [+1,0], [+1,0], [+1,0], [+1,0], [+1,0],
+                [0,-1], [0,-1], [0,-1], [0,-1],
+                [0,+1], [0,+1], [0,+1], [0,+1],
+            ], 
+            "0,-1": [
+                [-1,0], [-1,0], [-1,0], [-1,0],
+                [+1,0], [+1,0], [+1,0], [+1,0],
+                [0,-1], [0,-1], [0,-1], [0,-1], [0,-1], [0,-1], [0,-1], [0,-1], [0,-1], [0,-1], [0,-1], [0,-1],
+                [0,+1],
+            ],
+            "0,1": [
+                [-1,0], [-1,0], [-1,0], [-1,0],
+                [+1,0], [+1,0], [+1,0], [+1,0],
+                [0,-1],
+                [0,+1], [0,+1], [0,+1], [0,+1], [0,+1], [0,+1], [0,+1], [0,+1], [0,+1], [0,+1], [0,+1], [0,+1],
+            ],
+            "0,0": [
+                [-1,0],
+                [+1,0],
+                [0,-1],
+                [0,+1],
+            ]
+        }
+
+        if (enemy.lastDirection === undefined) {
+            enemy.lastDirection = [0, 0]
+        }
+
+        const matrixKey = `${enemy.lastDirection[0]},${enemy.lastDirection[1]}`
+        const probabilityMatrix = probabilityMatrices[matrixKey]
+
+        let newDirection = null
+        let newRow = null
+        let newCol = null
+
+        const triedDirections = {}
+
+        while (true) {
+            newDirection = probabilityMatrix[randomInt(0, probabilityMatrix.length - 1)]
+            newRow = enemy.position[0] + newDirection[0]
+            newCol = enemy.position[1] + newDirection[1]
+
+            if (Object.keys(triedDirections).length === probabilityMatrices.length) {
+                newRow = enemy.position[0]
+                newCol = enemy.position[1]
+                break
+            }
+
+            const key = `${newRow},${newCol}`
+            if (key in triedDirections) {
+                continue
+            }
+            triedDirections[key] = true
+
+            if (level.player.position[0] === newRow && level.player.position[1] === newCol) {
+                hitPlayer(config.enemies[enemy.type].lives, config.enemies[enemy.type].coins)
+                break
+            }
+
+            for (const upgrade of Object.values(config.upgrades)) {
+                if (!upgrade.mazeCode || level.maze.maze[newRow][newCol] !== upgrade.mazeCode) {
+                    continue
+                }
+        
+                if (!upgrade.bought()) {
+                    continue
+                }
+        
+                const lupgrade = level.upgrades.spawned[`${newRow},${newCol}`]
+                const damage = upgrade.onEnemyHit?.(lupgrade.element, enemy, [newRow, newCol])
+                if (damage) {
+                    hitEnemy(enemy)
+                }
+        
+                break
+            }
+
+            if (level.maze.maze[newRow][newCol] === config.walls.mazeCode) {
+                continue
+            }
+
+            let bad = false 
+            for (const innerEnemy of Object.values(level.enemies.spawned)) {
+                if (innerEnemy.position[0] === newRow && innerEnemy.position[1] === newCol) {
+                    bad = true
+                    break
+                }
+            }
+
+            if (bad) {
+                continue
+            }
+
+            break
+        }
+
+        enemy.lastDirection = newDirection
+        enemy.position[0] = newRow 
+        enemy.position[1] = newCol
+
+        if (newDirection[0] !== 0) {
+            enemy.element.style.setProperty("--row", newRow)
+        }
+
+        if (newDirection[1] !== 0) {
+            enemy.element.style.setProperty("--column", newCol)
+        }
+
+        if (enemy.canMove) {
+            enemy.canMove = false 
+            
+            enemy.timeout = setTimeout(() => {
+                enemy.canMove = true
+            }, config.enemies[enemy.type].movingSpeed)
+        } 
+    }
 }
 
 function gameTick() {
-    // tickEnemyMovement()
+    tickEnemyMovement()
     tickPlayerMovement()
     
-    // collectPoint(level.player.position)
-    // collectCoin(level.player.position)
+    attemptCollectPoint(level.player.position)
+    attemptCollectCoin(level.player.position)
 
     if (level.score === level.maze.maxPoints) {
         endGame(true)
@@ -1163,7 +1442,7 @@ function gameTick() {
 function resetState(fullReset=true) {
     clearTimeout(level?.player?.timeout)
 
-    for (const [enemyId, enemy] of Object.entries(level.enemies ?? {})) {
+    for (const enemy of Object.values(level.enemies ?? {})) {
         clearTimeout(enemy?.timeout)
     }
     
@@ -1177,8 +1456,10 @@ function resetState(fullReset=true) {
 }
 
 function startGame() {
-    for (const [upgradeId, upgrade] of Object.entries(config.upgrades)) {
-        upgrade.onRoundStart?.(global, level)
+    for (const upgrade of Object.values(config.upgrades)) {
+        if (upgrade.bought()) {
+            upgrade.onRoundStart?.()
+        }
     }
 
     generateMaze()
@@ -1196,6 +1477,54 @@ function startGame() {
     global.game.started = true
 }
 
+function endGame(playerWon) {
+    if (!global.game.started) {
+        return
+    }
+
+    for (const upgrade of Object.values(config.upgrades)) {
+        if (upgrade.bought()) {
+            upgrade.onRoundEnd?.()
+        }
+    }
+
+    level.player.element.dataset.animated = false
+    level.player.canMove = false
+
+    global.game.started = false 
+    clearInterval(global.game.tick)
+
+    for (const enemy of Object.values(level.enemies.spawned)) {
+        enemy.canMove = false 
+        clearTimeout(enemy.timeout)
+    }
+
+    if (playerWon) {
+        constructUpgradeDialog()
+
+        global.player.level++
+        elements.level.innerText = global.player.level 
+
+        incrementDifficulty()
+
+        elements.upgradeDialog.show()
+    } else {
+        const name = prompt("Your name for the leaderboard. Leave empty if you don't want to save your score.")
+
+        if (name !== null && name !== "") {
+            global.leaderboard.push({
+                name: name.trim(),
+                score: global.player.totalScore
+            })
+            localStorage.setItem(config.leaderboard.storageKey, JSON.stringify(global.leaderboard))
+
+            constructLeaderboard()
+        }
+
+        elements.restartDialog.show()
+    }
+}
+
 function loadSnackman() {
     resetState()
 
@@ -1209,566 +1538,13 @@ function loadSnackman() {
     
     elements.startDialogStartButton.addEventListener("click", handleStartDialogStart)
     elements.restartDialogRestartButton.addEventListener("click", handleRestartDialogRestart)
-    // elements.shopDialogContinueButton.addEventListener("click", handleShopDialogContinue)
+    elements.upgradeDialogContinueButton.addEventListener("click", handleUpgradeDialogContinue)
     
-    // constructLeaderboard()
+    constructLeaderboard()
     
     elements.restartDialog.close()
-    // elements.shopDialog.close()
+    elements.upgradeDialog.close()
     elements.startDialog.show()
 }
 
 document.addEventListener("DOMContentLoaded", loadSnackman)
-
-
-// let data = {}
-
-// function handleStartDialogStart(e) {
-//     resetState()
-//     startGame()
-//     elements.startDialog.close()
-// }
-
-// function handleRestartDialogRestart(e) {
-//     resetState()
-//     startGame()
-//     elements.restartDialog.close()
-// }
-
-// function handleShopDialogContinue(e) {
-//     resetState(false)
-//     startGame()
-//     elements.shopDialog.close()
-// }
-
-// function handleShopPurchase(e) {
-//     const item = shopItems[e.target.dataset.itemIndex]
-
-//     if (data.player.coins < item.price) {
-//         alert("Failed to purchase item because you don't have enough coins.")
-//         return
-//     }
-
-//     data.player.coins -= item.price
-//     data.upgrades[item.id].owned = true
-
-//     alert("Successfully purchased item!")
-
-//     resetState(false)
-//     startGame()
-
-//     elements.shopDialog.close()
-// }
-
-// function constructShopDialog() {
-//     elements.shopDialogItemsContainer.innerHTML = ""
-
-//     elements.shopDialogLevelDisplay.innerText = data.player.level
-
-//     const nonPurchasedItems = shopItems.filter((item) => !data.upgrades[item.id].owned)
-//     const used = []
-//     for (let i = 0; i < Math.min(3, nonPurchasedItems.length); i++) {
-//         let index = randomInt(0, nonPurchasedItems.length - 1)
-//         while (used.includes(index)) {
-//             index = randomInt(0, nonPurchasedItems.length - 1)
-//         }
-//         used.push(index)
-
-//         const container = document.createElement("button")
-//         container.dataset.itemIndex = index 
-//         container.addEventListener("click", handleShopPurchase)
-
-//         const label = document.createElement("h1")
-//         label.classList.add("label")
-//         label.innerText = `${nonPurchasedItems[index].name} [${nonPurchasedItems[index].price} Coins]`
-//         container.appendChild(label)
-
-//         const description = document.createElement("p")
-//         description.classList.add("description")
-//         description.innerText = `${nonPurchasedItems[index].description}`
-//         container.appendChild(description)
-
-//         elements.shopDialogItemsContainer.appendChild(container)
-//     }
-
-//     if (nonPurchasedItems.length === 0) {
-//         const p = document.createElement("p")
-//         p.innerText = "No items avaliable to purchase."
-//         elements.shopDialogItemsContainer.appendChild(p)
-//     }
-// }
-
-// function resetState(fullReset=true) {
-//     if (data?.player?.movingTimeout) {
-//         clearTimeout(data.player.movingTimeout)
-//     }
-
-//     if (data?.enemies?.movingTimeout) {
-//         clearTimeout(data.enemies.grunts.movingTimeout)
-//     }
-
-//     if (fullReset) {
-//         data = structuredClone(defaultData)
-//     } else {
-//         data.player.moving = false 
-//         data.player.invincible = false
-//         data.enemies = structuredClone(defaultData.enemies)
-//         data.points = structuredClone(defaultData.points)
-//         data.level = structuredClone(defaultData.level)
-//         data.coins = structuredClone(defaultData.coins)
-//         data.inputs = structuredClone(defaultData.inputs)
-//     }
-// }
-
-
-
-// function finishGame(playerWon) {
-//     if (!data.game?.started) {
-//         return
-//     }
-
-//     elements.player.dataset.animated = false
-
-//     data.game.started = false 
-//     clearInterval(data.game.tick)
-
-//     if (playerWon) {
-//         data.upgrades.pointDoubler.owned = false
-//         data.upgrades.bomb.owned = false 
-//         data.upgrades.jelly.owned = false
-//         data.upgrades.regeneration.owned = false
-        
-//         constructShopDialog()
-
-//         data.player.level++
-//         elements.level.innerText = data.player.level 
-
-//         incrementDifficulty()
-
-//         elements.shopDialog.show()
-//     } else {
-//         const name = prompt("Your name for the leaderboard. Leave empty if you don't want to save your score.")
-
-//         if (name !== null && name !== "") {
-//             data.leaderboard.push({
-//                 name: name.trim(),
-//                 score: data.player.totalScore
-//             })
-//             localStorage.setItem(settings.leaderboard.storageKey, JSON.stringify(data.leaderboard))
-
-//             constructLeaderboard()
-//         }
-
-//         elements.restartDialog.show()
-//     }
-// } 
-
-// function incrementDifficulty() {
-//     if ((data.player.level + 1) % 2 === 0) {
-//         data.maze.numberOf.grunts++
-//         data.maze.size++ 
-//     }
-// }
-
-// function debugGiveAllPoints() {
-//     let pointsLeftToCollect = data.maze.maxPoints - data.level.score
-//     data.level.score += pointsLeftToCollect
-//     data.player.totalScore += pointsLeftToCollect
-//     elements.score.innerText = data.player.totalScore
-    
-//     for (const point of elements.points) {
-//         point.dataset.collected = true 
-//     }
-
-//     for (const point of data.points) {
-//         point.collected = true
-//     }
-
-//     finishGame(true)
-// }
-
-// function debugSetPlayerCoins(newCoinsValue) {
-//     data.player.coins = newCoinsValue
-//     elements.coins.innerText = data.player.coins
-// }
-
-// function hitPlayer(enemyType) {
-//     let enemySetting
-//     switch (enemyType) {
-//         case mazeCodes.grunt: {
-//             damagePlayer(settings.enemies.grunts.damage)
-//             break
-//         }
-//         case mazeCodes.witch: {
-//             break
-//         }
-//         case mazeCodes.robber: {
-//             const toTake = randomInt(
-//                 settings.enemies.robbers.coinsToTake.min,
-//                 settings.enemies.robbers.coinsToTake.max
-//             )
-    
-//             if (data.player.coins - toTake < 0) {
-//                 data.player.coins = 0
-//             } else {
-//                 data.player.coints -= toTake
-//             }
-    
-//             elements.coins.innerText = data.player.coins
-
-//             break
-//         }
-//         case mazeCodes.crusher: {
-//             damagePlayer(settings.enemies.crushers.damage)
-//             break
-//         }
-//     }
-// }
-
-// // takes a life from the player
-// // if there are 0 lives left the player is killed and the game ends
-// function damagePlayer(damage) {
-//     if (data.player.invincible) {
-//         return
-//     }
-
-//     if (data.upgrades.shield.owned) {
-//         data.upgrades.shield.owned = false
-//         alert("You used your shield!")
-//         return
-//     }
-
-//     data.player.lives += damage
-//     constructLives()
-
-//     if (data.player.lives > 0) {
-//         elements.player.dataset.hit = true
-//         data.player.invincible = true 
-
-//         setTimeout(() => {
-//             data.player.invincible = false 
-//             elements.player.dataset.hit = false
-//         }, settings.player.durations.invincible)
-//     } else {
-//         elements.player.dataset.dead = true
-//         data.player.invincible = true 
-
-//         setTimeout(() => {
-//             finishGame(false)
-//         }, settings.player.durations.invincible)
-//     }
-// }
-
-// // if there is a point, collect it and increment score otherwise do nothing
-// function collectPoint(row, col) {
-//     for (const point of data.points) {
-//         if (
-//             point.position[0] === row && 
-//             point.position[1] === col && 
-//             !point.collected
-//         ) {
-//             const pointElement = document.getElementById(point.id)
-//             pointElement.dataset.collected = true
-//             point.collected = true
-    
-//             let incrementValue = 1
-//             if (data.upgrades.pointDoubler.owned) {
-//                 incrementValue *= 2
-//             }
-
-//             data.level.score += incrementValue
-//             data.player.totalScore += incrementValue
-//             elements.score.innerText = data.player.totalScore
-//             break
-//         }
-//     }
-// }
-
-// function collectCoin(row, col) {
-//     for (const coin of data.coins) {
-//         if (
-//             coin.position[0] === row && 
-//             coin.position[1] === col && 
-//             !coin.collected
-//         ) {
-//             const coinElement = document.getElementById(coin.id)
-//             coinElement.dataset.collected = true
-//             coin.collected = true
-    
-//             data.player.coins++
-//             elements.coins.innerText = data.player.coins
-//             break
-//         }
-//     }
-// }
-
-// function tickEnemyMovement() {
-//     let gruntMoved = false
-//     let robberMoved = false
-//     let witchMoved = false 
-//     let crusherMoved = false
-
-//     for (const enemy of data.enemies.enemies) {
-//         if (enemy.stuck || enemy.damaged) {
-//             continue
-//         }
-
-//         if (enemy.type === mazeCodes.grunt  && data.enemies.grunts.moving) {
-//             continue
-//         } else {
-//             gruntMoved = true
-//         }
-
-//         if (enemy.type === mazeCodes.robber  && data.enemies.robbers.moving) {
-//             continue
-//         } else {
-//             robberMoved = true
-//         }
-
-//         if (enemy.type === mazeCodes.witch  && data.enemies.witches.moving) {
-//             continue
-//         } else {
-//             witchMoved = true
-//         }
-
-//         if (enemy.type === mazeCodes.crusher  && data.enemies.crushers.moving) {
-//             continue
-//         } else {
-//             crusherMoved = true
-//         }
-        
-//         // makes the enemy most likely to continue on its current path, makes it very rare it goes back the way it came
-//         const probabilityMatrices = {
-//             "-1,0": [
-//                 [-1,0], [-1,0], [-1,0], [-1,0], [-1,0], [-1,0], [-1,0], [-1,0], [-1,0], [-1,0], [-1,0], [-1,0],
-//                 [+1,0],
-//                 [0,-1], [0,-1], [0,-1], [0,-1],
-//                 [0,+1], [0,+1], [0,+1], [0,+1],
-//             ],
-//             "1,0": [
-//                 [-1,0],
-//                 [+1,0], [+1,0], [+1,0], [+1,0], [+1,0], [+1,0], [+1,0], [+1,0], [+1,0], [+1,0], [+1,0], [+1,0],
-//                 [0,-1], [0,-1], [0,-1], [0,-1],
-//                 [0,+1], [0,+1], [0,+1], [0,+1],
-//             ], 
-//             "0,-1": [
-//                 [-1,0], [-1,0], [-1,0], [-1,0],
-//                 [+1,0], [+1,0], [+1,0], [+1,0],
-//                 [0,-1], [0,-1], [0,-1], [0,-1], [0,-1], [0,-1], [0,-1], [0,-1], [0,-1], [0,-1], [0,-1], [0,-1],
-//                 [0,+1],
-//             ],
-//             "0,1": [
-//                 [-1,0], [-1,0], [-1,0], [-1,0],
-//                 [+1,0], [+1,0], [+1,0], [+1,0],
-//                 [0,-1],
-//                 [0,+1], [0,+1], [0,+1], [0,+1], [0,+1], [0,+1], [0,+1], [0,+1], [0,+1], [0,+1], [0,+1], [0,+1],
-//             ],
-//             "0,0": [
-//                 [-1,0],
-//                 [+1,0],
-//                 [0,-1],
-//                 [0,+1],
-//             ]
-//         }
-
-//         if (enemy.lastDirection === undefined) {
-//             enemy.lastDirection = [0, 0]
-//         }
-
-//         const matrixKey = `${enemy.lastDirection[0]},${enemy.lastDirection[1]}`
-//         const probabilityMatrix = probabilityMatrices[matrixKey]
-
-//         let newDirection = null
-//         let newRow = null
-//         let newCol = null
-        
-//         const triedDirections = {}
-
-//         while (true) {
-//             newDirection = probabilityMatrix[randomInt(0, probabilityMatrix.length - 1)]
-//             newRow = enemy.position[0] + newDirection[0]
-//             newCol = enemy.position[1] + newDirection[1]
-
-//             if (Object.keys(triedDirections).length === probabilityMatrices.length) {
-//                 newRow = enemy.position[0]
-//                 newCol = enemy.position[1]
-//                 break
-//             }
-
-//             const key = `${newRow},${newCol}`
-//             if (key in triedDirections) {
-//                 continue
-//             }
-//             triedDirections[key] = true
-
-//             if (data.player.position[0] === newRow && data.player.position[1] === newCol) {
-//                 // we hit a player, so damage the player and dont move into the spot
-//                 hitPlayer(enemy.type)
-//                 break
-//             }
-
-//             if (
-//                 data.upgrades.bomb.position[0] === newRow && 
-//                 data.upgrades.bomb.position[1] === newCol && 
-//                 !data.upgrades.bomb.detonated
-//             ) {
-//                 enemy.damaged = true
-
-//                 switch (enemy.type) {
-//                     case mazeCodes.grunt: {
-//                         setTimeout(() => {
-//                             enemy.damaged = false
-//                         }, settings.enemies.grunts.durations.damaged);
-//                         break
-//                     } 
-//                     case mazeCodes.robber: {
-//                         setTimeout(() => {
-//                             enemy.damaged = false
-//                         }, settings.enemies.robbers.durations.damaged);
-//                         break
-//                     } 
-//                     case mazeCodes.witch: {
-//                         setTimeout(() => {
-//                             enemy.damaged = false
-//                         }, settings.enemies.witches.durations.damaged);
-//                         break
-//                     } 
-//                     case mazeCodes.crusher: {
-//                         setTimeout(() => {
-//                             enemy.damaged = false
-//                         }, settings.enemies.crushers.durations.damaged);
-//                         break
-//                     } 
-//                 }
-
-//                 elements.bomb.dataset.detonated = true
-//                 data.upgrades.bomb.detonated = true
-
-//                 break
-//             }
-    
-//             if (
-//                 data.upgrades.jelly.position[0] === newRow && 
-//                 data.upgrades.jelly.position[1] === newCol &&
-//                 !data.upgrades.jelly.eaten
-//             ) {
-//                 enemy.stuck = true
-
-//                 switch (enemy.type) {
-//                     case mazeCodes.grunt: {
-//                         setTimeout(() => {
-//                             enemy.stuck = false
-//                         }, settings.enemies.grunts.durations.stuck);
-//                         break
-//                     } 
-//                     case mazeCodes.robber: {
-//                         setTimeout(() => {
-//                             enemy.stuck = false
-//                         }, settings.enemies.robbers.durations.stuck);
-//                         break
-//                     } 
-//                     case mazeCodes.witch: {
-//                         setTimeout(() => {
-//                             enemy.stuck = false
-//                         }, settings.enemies.witches.durations.stuck);
-//                         break
-//                     } 
-//                     case mazeCodes.crusher: {
-//                         setTimeout(() => {
-//                             enemy.stuck = false
-//                         }, settings.enemies.crushers.durations.stuck);
-//                         break
-//                     } 
-//                 }
-
-//                 break
-//             }
-
-//             if (data.maze.maze[newRow][newCol] === mazeCodes.wall) {
-//                 continue
-//             }
-
-//             let bad = false 
-//             for (const innerEnemy of data.enemies.enemies) {
-//                 if (innerEnemy.position[0] === newRow && innerEnemy.position[1] === newCol) {
-//                     bad = true
-//                     break
-//                 }
-//             }
-
-//             if (bad) {
-//                 continue
-//             }
-
-//             break
-//         }
-
-//         enemy.lastDirection = newDirection
-//         enemy.position[0] = newRow 
-//         enemy.position[1] = newCol
-
-//         const element = document.getElementById(enemy.id)
-
-//         if (newDirection[0] !== 0) {
-//             element.style.setProperty("--row", newRow)
-//         }
-
-//         if (newDirection[1] !== 0) {
-//             element.style.setProperty("--column", newCol)
-//         }
-//     }
-
-//     if (gruntMoved) {
-//         data.enemies.grunts.moving = true
-//         data.enemies.grunts.movingTimeout = setTimeout(() => {
-//             data.enemies.grunts.moving = false
-//         }, settings.enemies.grunts.durations.moving)
-//     }
-
-//     if (witchMoved) {
-//         data.enemies.witches.moving = true
-//         data.enemies.witches.movingTimeout = setTimeout(() => {
-//             data.enemies.witches.moving = false
-//         }, settings.enemies.witches.durations.moving)
-//     }
-
-//     if (robberMoved) {
-//         data.enemies.robbers.moving = true
-//         data.enemies.robbers.movingTimeout = setTimeout(() => {
-//             data.enemies.robbers.moving = false
-//         }, settings.enemies.robbers.durations.moving)
-//     }
-
-//     if (crusherMoved) {
-//         data.enemies.crushers.moving = true
-//         data.enemies.crushers.movingTimeout = setTimeout(() => {
-//             data.enemies.crushers.moving = false
-//         }, settings.enemies.crushers.durations.moving)
-//     }
-// }
-
-
-
-// function loadSnackman() {
-//     document.addEventListener("keyup", handleKeyUp)
-//     document.addEventListener("keydown", handleKeyDown)  
-    
-//     elements.touchUpButton.addEventListener("click", handleTouchButtonClick)
-//     elements.touchDownButton.addEventListener("click", handleTouchButtonClick)
-//     elements.touchLeftButton.addEventListener("click", handleTouchButtonClick)
-//     elements.touchRightButton.addEventListener("click", handleTouchButtonClick)
-    
-//     elements.startDialogStartButton.addEventListener("click", handleStartDialogStart)
-//     elements.restartDialogRestartButton.addEventListener("click", handleRestartDialogRestart)
-//     elements.shopDialogContinueButton.addEventListener("click", handleShopDialogContinue)
-    
-//     constructLeaderboard()
-    
-//     elements.restartDialog.close()
-//     elements.shopDialog.close()
-//     elements.startDialog.show()
-// }
-
-// document.addEventListener("DOMContentLoaded", loadSnackman)
-
-// resetState()

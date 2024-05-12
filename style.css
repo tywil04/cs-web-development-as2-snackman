@@ -124,7 +124,7 @@ dialog[open] .container button .label {
     pointer-events: none;
 }
 
-dialog[open] .container #shop-items button .label {
+dialog[open] .container #upgrade-items button .label {
     font-size: 1.2em;
 }
 
@@ -136,7 +136,7 @@ dialog[open] .container button .description {
     pointer-events: none;
 }
 
-dialog[open] .container #shop-items {
+dialog[open] .container #upgrade-items {
     display: flex;
     flex-direction: column;
     gap: 30px;
@@ -274,6 +274,10 @@ dialog[open] .container #shop-items {
             height: calc(100% - 2px);
             top: calc(100% * calc(var(--row) - var(--starting-row)));
             left: calc(100% * calc(var(--column) - var(--starting-column)));
+
+            &[data-hit=true] {
+                animation: grunt-hit-animation 1.5s ease-in-out !important;
+            }
         }
 
         &.witch {
@@ -294,6 +298,10 @@ dialog[open] .container #shop-items {
             height: calc(100% - 2px);
             top: calc(100% * calc(var(--row) - var(--starting-row)));
             left: calc(100% * calc(var(--column) - var(--starting-column)));
+
+            &[data-hit=true] {
+                animation: witch-hit-animation 1.5s ease-in-out !important;
+            }
         }
 
         &.robber {
@@ -314,6 +322,10 @@ dialog[open] .container #shop-items {
             height: calc(100% - 2px);
             top: calc(100% * calc(var(--row) - var(--starting-row)));
             left: calc(100% * calc(var(--column) - var(--starting-column)));
+
+            &[data-hit=true] {
+                animation: robber-hit-animation 1.5s ease-in-out !important;
+            }
         }
 
         &.crusher {
@@ -334,6 +346,10 @@ dialog[open] .container #shop-items {
             height: calc(100% - 2px);
             top: calc(100% * calc(var(--row) - var(--starting-row)));
             left: calc(100% * calc(var(--column) - var(--starting-column)));
+
+            &[data-hit=true] {
+                animation: crusher-hit-animation 1.5s ease-in-out !important;
+            }
         }
     
         &.wall {
@@ -511,6 +527,51 @@ img.logo {
 @keyframes hit-animation {
     0%, 100% {
         background: var(--snackman-color);
+        transform: rotate(var(--rotation)) scale(1);
+    }
+    50% {
+        background: var(--snackman-hit-color);
+        transform: rotate(var(--rotation)) scale(0.75);
+    }
+}
+
+@keyframes grunt-hit-animation {
+    0%, 100% {
+        background: var(--grunt-color);
+        transform: rotate(var(--rotation)) scale(1);
+    }
+    50% {
+        background: var(--snackman-hit-color);
+        transform: rotate(var(--rotation)) scale(0.75);
+    }
+}
+
+
+@keyframes witch-hit-animation {
+    0%, 100% {
+        background: var(--witch-color);
+        transform: rotate(var(--rotation)) scale(1);
+    }
+    50% {
+        background: var(--snackman-hit-color);
+        transform: rotate(var(--rotation)) scale(0.75);
+    }
+}
+
+@keyframes robber-hit-animation {
+    0%, 100% {
+        background: var(--robber-color);
+        transform: rotate(var(--rotation)) scale(1);
+    }
+    50% {
+        background: var(--snackman-hit-color);
+        transform: rotate(var(--rotation)) scale(0.75);
+    }
+}
+
+@keyframes crusher-hit-animation {
+    0%, 100% {
+        background: var(--crusher-color);
         transform: rotate(var(--rotation)) scale(1);
     }
     50% {
