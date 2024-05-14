@@ -113,12 +113,12 @@ global data, level data, amount of damage going to be dealt
 returns damage to be dealt
 its called whenever the player is going to be dealt damage
 
-onRoundStart():
+onStart():
 global data, level data
 no returns
 its called whenever a new round starts
 
-onRoundEnd():
+onEnd():
 global data, level data
 no returns
 its called whenever a round has ended
@@ -253,7 +253,7 @@ const config = {
             available() {
                 return !global.upgrades.pointDoubler.bought
             },
-            onRoundEnd() {
+            onEnd() {
                 global.upgrades.pointDoubler.bought = false
             },
             onPlayerPoints(points) {
@@ -274,7 +274,7 @@ const config = {
             available() {
                 return !global.upgrades.coinDoubler.bought
             },
-            onRoundEnd() {
+            onEnd() {
                 global.upgrades.coinDoubler.bought = false
             },
             onPlayerCoins(coins) {
@@ -295,10 +295,10 @@ const config = {
             available() {
                 return !global.upgrades.regeneration.bought
             },
-            onRoundEnd() {
+            onEnd() {
                 global.upgrades.regeneration.bought = false
             },
-            onRoundStart() {
+            onStart() {
                 global.player.lives = config.player.startingLives
             },
         },
@@ -321,7 +321,7 @@ const config = {
             available() {
                 return !global.upgrades.bomb.bought
             },
-            onRoundEnd() {
+            onEnd() {
                 global.upgrades.bomb.bought = false
             },
             onPlayerHit(element, position) {
@@ -405,6 +405,7 @@ const defaultGlobal = {
     game: {
         tick: null,
         started: false,
+        paused: false,
     },
 
     get enemies() {
@@ -533,6 +534,12 @@ const elements = {
     get upgradeDialogLevelDisplay() {       
         return document.getElementById("upgrade-level-display")
     },
+    get unpauseDialog() {
+        return document.getElementById("unpause-dialog")
+    },
+    get unpauseDialogUnpauseButton() {
+        return document.getElementById("unpause-dialog:unpause")
+    },
     get touchUpButton() {                
         return document.getElementById("up-button")
     },
@@ -603,12 +610,19 @@ function handleUpgradePurchase(e) {
 }
 
 function handleKeyDown(e) {
-    if (!global?.game?.started) {
+    if (!global.game.started) {
         return
     }
 
-    const wanted = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "w", "a", "s", "d"]
-    if (!wanted.includes(e.key)) {
+    if (e.code === "Space") {
+        if (global.game.paused) {
+            unpauseGame()
+        } else {
+            pauseGame()
+        }
+    }
+
+    if (global.game.paused) {
         return
     }
 
@@ -637,7 +651,7 @@ function handleKeyDown(e) {
 }
 
 function handleKeyUp(e) {
-    if (!global?.game?.started) {
+    if (!global.game.started || global.game.paused) {
         return
     }
 
@@ -659,7 +673,7 @@ function handleKeyUp(e) {
 }
 
 function handleTouchButtonClick(e) {
-    if (!global?.game?.started) {
+    if (!global.game.started || global.game.paused) {
         return
     }
 
@@ -682,7 +696,7 @@ function handleTouchButtonClick(e) {
         elements.touchUpButton.dataset.active = false
         elements.touchLeftButton.dataset.active = false
         elements.touchRightButton.dataset.active = false
-    } else if (e.target === elements.touchLeftButton) {
+    } else if (e.target === elementFs.touchLeftButton) {
         global.inputs.touch.left = !global.inputs.touch.left
         elements.touchLeftButton.dataset.active = global.inputs.touch.left
         global.inputs.touch.up = false
@@ -701,6 +715,17 @@ function handleTouchButtonClick(e) {
         elements.touchDownButton.dataset.active = false
         elements.touchLeftButton.dataset.active = false
     }
+}
+
+function handleUnpauseDialogUnpause(e) {
+    unpauseGame()
+}
+
+function handleVisibilityChange(e) {
+    if (document.visibilityState !== "hidden") {
+        return
+    }
+    pauseGame()
 }
 
 function randomInt(min, max) {
@@ -1143,6 +1168,18 @@ function addLives(lives) {
     constructLives()
 }
 
+function addLeaderboardEntry(name, score) {
+    if (name !== null && name !== "") {
+        global.leaderboard.push({
+            name: name,
+            score: score,
+        })
+        localStorage.setItem(config.leaderboard.storageKey, JSON.stringify(global.leaderboard))
+
+        constructLeaderboard()
+    }
+}
+
 function hitPlayer(lives, coins) {
     if (!level.player.canBeDamaged) {
         return
@@ -1458,7 +1495,7 @@ function resetState(fullReset=true) {
 function startGame() {
     for (const upgrade of Object.values(config.upgrades)) {
         if (upgrade.bought()) {
-            upgrade.onRoundStart?.()
+            upgrade.onStart?.()
         }
     }
 
@@ -1478,25 +1515,26 @@ function startGame() {
 }
 
 function endGame(playerWon) {
-    if (!global.game.started) {
+    if (!global.game.started || global.game.paused) {
         return
     }
-
-    for (const upgrade of Object.values(config.upgrades)) {
-        if (upgrade.bought()) {
-            upgrade.onRoundEnd?.()
-        }
-    }
-
-    level.player.element.dataset.animated = false
-    level.player.canMove = false
 
     global.game.started = false 
     clearInterval(global.game.tick)
 
+    level.player.element.dataset.animated = false
+    level.player.canMove = false
+    clearInterval(level.player.timeout)
+
     for (const enemy of Object.values(level.enemies.spawned)) {
         enemy.canMove = false 
         clearTimeout(enemy.timeout)
+    }
+
+    for (const upgrade of Object.values(config.upgrades)) {
+        if (upgrade.bought()) {
+            upgrade.onEnd?.()
+        }
     }
 
     if (playerWon) {
@@ -1509,27 +1547,82 @@ function endGame(playerWon) {
 
         elements.upgradeDialog.show()
     } else {
-        const name = prompt("Your name for the leaderboard. Leave empty if you don't want to save your score.")
-
-        if (name !== null && name !== "") {
-            global.leaderboard.push({
-                name: name.trim(),
-                score: global.player.totalScore
-            })
-            localStorage.setItem(config.leaderboard.storageKey, JSON.stringify(global.leaderboard))
-
-            constructLeaderboard()
+        if (level.score !== 0) {
+            const name = prompt("Your name for the leaderboard. Leave empty if you don't want to save your score.")
+            addLeaderboardEntry(name, global.player.totalScore)
         }
 
         elements.restartDialog.show()
     }
 }
 
+
+function pauseGame() {
+    if (!global.game.started || global.game.paused) {
+        return
+    }
+
+    global.game.started = false 
+    global.game.paused = true
+    clearInterval(global.game.tick)
+    
+    level.player.element.dataset.animated = false
+    level.player.canMove = false
+    clearInterval(level.player.timeout)
+
+    for (const enemy of Object.values(level.enemies.spawned)) {
+        enemy.canMove = false 
+        clearTimeout(enemy.timeout)
+    }
+
+    for (const upgrade of Object.values(config.upgrades)) {
+        if (upgrade.bought()) {
+            upgrade.onPaused?.()
+        }
+    }
+
+    elements.unpauseDialog.show()
+}
+
+function unpauseGame() {
+    if (global.game.started || !global.game.paused) {
+        return
+    }
+
+    global.game.paused = false
+    global.game.started = true
+    global.game.tick = setInterval(gameTick, config.game.tickSpeed)     
+
+    level.player.element.dataset.animated = true
+    level.player.canMove = true 
+
+    for (const enemy of Object.values(level.enemies.spawned)) {
+        enemy.canMove = true
+    }
+
+    for (const upgrade of Object.values(config.upgrades)) {
+        if (upgrade.bought()) {
+            upgrade.onUnpaused?.()
+        }
+    }
+    
+    elements.unpauseDialog.close()
+}
+
+function debugCollectAllPoints() {
+    addPoints(level.maze.maxPoints - level.score)
+}
+
+function debugKillPlayer() {
+    hitPlayer(-global.player.lives, 0)
+}
+
 function loadSnackman() {
     resetState()
 
     document.addEventListener("keyup", handleKeyUp)
-    document.addEventListener("keydown", handleKeyDown)  
+    document.addEventListener("keydown", handleKeyDown)
+    document.addEventListener("visibilitychange", handleVisibilityChange)  
     
     elements.touchUpButton.addEventListener("click", handleTouchButtonClick)
     elements.touchDownButton.addEventListener("click", handleTouchButtonClick)
@@ -1539,11 +1632,13 @@ function loadSnackman() {
     elements.startDialogStartButton.addEventListener("click", handleStartDialogStart)
     elements.restartDialogRestartButton.addEventListener("click", handleRestartDialogRestart)
     elements.upgradeDialogContinueButton.addEventListener("click", handleUpgradeDialogContinue)
+    elements.unpauseDialogUnpauseButton.addEventListener("click", handleUnpauseDialogUnpause)
     
     constructLeaderboard()
     
     elements.restartDialog.close()
     elements.upgradeDialog.close()
+    elements.unpauseDialog.close()
     elements.startDialog.show()
 }
 
