@@ -1,147 +1,10 @@
 /*
 
-# Snackman Game
+SNACKMAN 
 
-## Start
-The game only starts when the user presses the start button. It will disappear when the game has
-started.
+Web Development AS2
 
-
-## Player
-Players can move every 500ms. Inputs are only accepted when the game has started. The player can 
-only move into points, enemies, enemy spawn locations and the player spawn location. If WASD or the 
-arrow keys are held, the player will move every 500ms. Individual WASD or arrow key inputs are only 
-accepted if the player is able to move (500ms after they last moved). The touch arrows stay 
-depressed until the player manually releases them or if a WASD or arrow key is pressed.
-
-If after all enemies have finished moving and the player have finished moving they share the 
-same position, the player will get hurt and will become invincible for 1500ms. While invincible 
-the player cannot move. Enemies will continue to move even when the player cant.
-
-The player has 3 lives by default. Every level the lives are reset back to 3. Every time a player 
-is hurt a life is taken. Once 0 lives has been reached the player dies and is asked if they want to 
-restart, if the player had more than 0 points they are asked for their name so the score can be 
-saved on the leaderboard. If the player wins they are asked if they want to continue on to the next 
-level or if they want to quit. If they continue, a new more difficult maze is generated and their 
-level increases by 1. If they quit they are prompted for their name so their score can be saved on 
-the leaderboard, then the maze is difficulty is reset and the start button is shown.
-
-Every point collected increments the score by 1.
-
-
-## Enemies
-Enemies next move is calculated every 500ms. If they have a direction, they will continue for a 
-random number of blocks defined when the direction was defined. If the enemy encounters a wall it 
-will change direction and will define a new number of blocks to move. There is a 1/8  chance the 
-enemy will be allowed to go back the way it came if there are multiple valid  directions otherwise 
-it will not be allowed to go back the way it came. Enemies cannot share the same space as other 
-enemies.
-
-
-## Maze
-There are infinite levels because levels are randomly generated and every block is reachable. 
-Enemy spawn locations and the player spawn location is randomly generated with every maze. Mazes can 
-be any size, but the default is 10.
-
-Enemy and player spawn locations do not contain points, and once the enemy/player has moved they 
-are empty and do nothing.
-
-The minimum number of walls (not including the outside walls) is: 
-data.maze.size * Math.floor(playersLevel / 6) + 1. 
-
-The maximum number of walls (not including the outside walls) is: 
-data.maze.size * 1.5 * Math.floor(data.player.level / 3) + 1.
-
-After every level increase, the number of enemies increases by 1 provided the maze has less than 30%
-of its blocks being enemy spawners. After every 3 levels, the maze size is increased by 2.
-
-
-## Known Bugs
-Sometimes enemies share the same space, shouldn't happen but there is an issue with the logic I
-have yet to find.
-
-When pressing WASD or the physical arrow keys, if you try and move while snackman is moving your input 
-will be ignored. It technically isnt a bug but an intended feature, snackman should only move every 
-500ms but it feels broken.
-
-After using the touch arrows for continuous movement, sometimes when you exit using WASD or physical
-arrow keys your input is ignored, is again because snackman only moves every 500ms. If your 
-press when snackmen is moving your press gets ignored. It technically isnt a bug but an intended 
-feature. 
-
-When moving to a different tab in your browser and then returing back to snackman, the enemies
-animations appear broken, is because of the css animation used to make their movement
-smooth. css animations stop rendering when you move onto a different tab but the enemies continue 
-moving. What means is that when you return, the css animation has to play catch up so it 
-makes the enemy "move" to its new location extremely fast (and sometimes it looks like its moved 
-diagonally).
-
-
-*/
-
-/* 
-
-UPGRADES API
-============
-
-PROPERTIES
-mazeCode int
-numberOf int
-class string
-
-if mazeCode is present and bought the upgrade will spawn in the maze
-numberOf defines the number to be in the maze
-class defines the css class the item in the maze will have
-
-METHODS
-buy():
-global data, level data
-no returns
-its called when the player buying the item
-
-bought()
-global data, level data
-no returns
-
-available():
-global data, level data
-returns bool
-its called when the player is attempting to purchase the item
-
-onPlayerDamage():
-global data, level data, amount of damage going to be dealt
-returns damage to be dealt
-its called whenever the player is going to be dealt damage
-
-onStart():
-global data, level data
-no returns
-its called whenever a new round starts
-
-onEnd():
-global data, level data
-no returns
-its called whenever a round has ended
-
-onPlayerCoins():
-global data, level data, amount of coins going to be dealt
-returns coins to be dealt
-its called whenever the player is going to be dealt coins
-
-onPlayerPoints():
-global data, level data, amount of points going to be dealt
-returns points to be dealt
-its called whenever the player is going to be dealt points
-
-onPlayerHit():
-global data, level data
-returns damage to deal to player, whether the item should be removed from the maze
-its called whenever the player hits the item in the maze
-
-onEnemyHit():
-global data, level data
-returns whether the item should be removed from the maze
-its called whenever an enemy hits the item in the maze
+Tyler Williams
 
 */
 
@@ -158,14 +21,14 @@ const config = {
         grunt: {
             // deals -1 lives, deals 0 coins
             movingSpeed: 500, // in ms
-            damagedDuration: 4000,
+            damagedDuration: 4000, // in ms
             lives: -1,
             coins: 0,
             mazeCode: 3,
             startingNumberOf: 1,
             class: "grunt",
             incrementEnemyCount() {
-                return (global.player.level % 2) === 0
+                return (global.player.level % 1) === 0
             },
         },
 
@@ -186,7 +49,7 @@ const config = {
             startingNumberOf: 0,
             class: "witch",
             incrementEnemyCount() {
-                return (global.player.level % 4) === 0
+                return (global.player.level % 3) === 0
             },
         },
 
@@ -202,7 +65,7 @@ const config = {
             startingNumberOf: 0,
             class: "robber",
             incrementEnemyCount() {
-                return (global.player.level % 3) === 0
+                return (global.player.level % 2) === 0
             },
         },
 
@@ -216,7 +79,7 @@ const config = {
             startingNumberOf: 0,
             class: "crusher",
             incrementEnemyCount() {
-                return (global.player.level % 5) === 0
+                return (global.player.level % 4) === 0
             },
         }
     },
@@ -295,11 +158,11 @@ const config = {
             available() {
                 return !global.upgrades.regeneration.bought
             },
-            onEnd() {
-                global.upgrades.regeneration.bought = false
-            },
             onStart() {
                 global.player.lives = config.player.startingLives
+                constructLives()
+
+                global.upgrades.regeneration.bought = false
             },
         },
     
@@ -406,6 +269,7 @@ const defaultGlobal = {
         tick: null,
         started: false,
         paused: false,
+        canPause: true,
     },
 
     get enemies() {
@@ -477,7 +341,7 @@ const defaultLevel = {
                 //     canMove: false,
                 //     timeout: null,
                 // }
-            ]
+            ],
         }
         return enemies
     },
@@ -614,14 +478,6 @@ function handleKeyDown(e) {
         return
     }
 
-    if (e.code === "Space") {
-        if (global.game.paused) {
-            unpauseGame()
-        } else {
-            pauseGame()
-        }
-    }
-
     if (global.game.paused) {
         return
     }
@@ -696,7 +552,7 @@ function handleTouchButtonClick(e) {
         elements.touchUpButton.dataset.active = false
         elements.touchLeftButton.dataset.active = false
         elements.touchRightButton.dataset.active = false
-    } else if (e.target === elementFs.touchLeftButton) {
+    } else if (e.target === elements.touchLeftButton) {
         global.inputs.touch.left = !global.inputs.touch.left
         elements.touchLeftButton.dataset.active = global.inputs.touch.left
         global.inputs.touch.up = false
@@ -725,6 +581,10 @@ function handleVisibilityChange(e) {
     if (document.visibilityState !== "hidden") {
         return
     }
+    pauseGame()
+}
+
+function handleWindowBlur() {
     pauseGame()
 }
 
@@ -1300,13 +1160,13 @@ function tickPlayerMovement() {
 
         const lupgrade = level.upgrades.spawned[`${newRow},${newCol}`]
         const damage = upgrade.onPlayerHit?.(lupgrade.element, [newRow, newCol])
-        damagePlayer(damage)
+        hitPlayer(damage, 0)
 
         break
     }
 
     for (const enemy of Object.values(level.enemies.spawned)) {
-        if (level.player.position[0] === enemy.position[0] && level.player.position[1] === enemy.position[1]) {
+        if (enemy.position[0] === newRow && enemy.position[1] === newCol) {
             hitPlayer(config.enemies[enemy.type].lives, config.enemies[enemy.type].coins)
             break
         }
@@ -1465,9 +1325,9 @@ function tickEnemyMovement() {
 }
 
 function gameTick() {
-    tickEnemyMovement()
     tickPlayerMovement()
-    
+    tickEnemyMovement()
+
     attemptCollectPoint(level.player.position)
     attemptCollectCoin(level.player.position)
 
@@ -1549,7 +1409,12 @@ function endGame(playerWon) {
     } else {
         if (level.score !== 0) {
             const name = prompt("Your name for the leaderboard. Leave empty if you don't want to save your score.")
-            addLeaderboardEntry(name, global.player.totalScore)
+            if (name != undefined) {
+                const trimmed = name.trim()
+                if (trimmed !== "") {
+                    addLeaderboardEntry(trimmed, global.player.totalScore)
+                }   
+            }
         }
 
         elements.restartDialog.show()
@@ -1558,6 +1423,10 @@ function endGame(playerWon) {
 
 
 function pauseGame() {
+    if (!global.game.canPause) {
+        return 
+    }
+
     if (!global.game.started || global.game.paused) {
         return
     }
@@ -1577,7 +1446,7 @@ function pauseGame() {
 
     for (const upgrade of Object.values(config.upgrades)) {
         if (upgrade.bought()) {
-            upgrade.onPaused?.()
+            upgrade.onPause?.()
         }
     }
 
@@ -1602,19 +1471,11 @@ function unpauseGame() {
 
     for (const upgrade of Object.values(config.upgrades)) {
         if (upgrade.bought()) {
-            upgrade.onUnpaused?.()
+            upgrade.onUnpause?.()
         }
     }
     
     elements.unpauseDialog.close()
-}
-
-function debugCollectAllPoints() {
-    addPoints(level.maze.maxPoints - level.score)
-}
-
-function debugKillPlayer() {
-    hitPlayer(-global.player.lives, 0)
 }
 
 function loadSnackman() {
@@ -1623,6 +1484,8 @@ function loadSnackman() {
     document.addEventListener("keyup", handleKeyUp)
     document.addEventListener("keydown", handleKeyDown)
     document.addEventListener("visibilitychange", handleVisibilityChange)  
+
+    window.addEventListener("blur", handleWindowBlur)
     
     elements.touchUpButton.addEventListener("click", handleTouchButtonClick)
     elements.touchDownButton.addEventListener("click", handleTouchButtonClick)
@@ -1643,3 +1506,73 @@ function loadSnackman() {
 }
 
 document.addEventListener("DOMContentLoaded", loadSnackman)
+
+/*
+
+Testing Specific Methods
+
+*/
+function testCollectAllPoints() {
+    addPoints(level.maze.maxPoints - level.score)
+}
+
+function testKillPlayer() {
+    hitPlayer(-global.player.lives, 0)
+}
+
+function testSpawnEnemyNextRound(enemyId, numberOf) {
+    global.enemies[enemyId].numberOf = numberOf
+}
+
+function testWinGame() {
+    endGame(true)
+}
+
+function testFailGame() {
+    endGame(false)
+}
+
+function testBuyUpgrade(upgradeId) {
+    if (config.upgrades[upgradeId].available()) {
+        config.upgrades[upgradeId].buy()
+        return true 
+    }
+    return false
+}
+
+function testGiveCoins(amount=1000) {
+    addCoins(+amount)
+}
+
+function testDamagePlayer(amount=1) {
+    hitPlayer(-amount, 0)
+}
+
+function testRobPlayer(amount=1) {
+    hitPlayer(0, -amount)
+}
+
+function testDisableEnemyMovement() {
+    for (const enemy of Object.values(level.enemies.spawned)) {
+        enemy.canMove = false
+        clearTimeout(enemy.timeout)
+    }
+}
+
+function testEnableEnemyMovement() {
+    for (const enemy of Object.values(level.enemies.spawned)) {
+        enemy.canMove = true
+    }
+}
+
+function testDisablePausing() {
+    global.game.canPause = false
+}
+
+function testEnablePausing() {
+    global.game.canPause = true
+}
+
+function testAddLeaderboardEntry(name, score) {
+    addLeaderboardEntry(name, score)
+}

@@ -1,5 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
+/*
+
+NOTE:
+before you say anything, nested css is a relatively new feature but it is widely supported by all major browsers.
+I prefer the experience of writing nested css hence I used it for this project.
+
+*/
+
 :root {
     --font-family: "Press Start 2P";
 
@@ -63,83 +71,85 @@ header {
     }
 }
 
-dialog[open] {
-    background-color: var(--secondary-bg-color);
-    z-index: 100;
-    border-radius: 20px;
-    padding: 30px;
-    display: flex;
-    height: fit-content;
-    cursor: default;
-    box-shadow: var(--box-shadow);
-    outline: none;
-    flex-direction: row;
-    border: none;
-    width: fit-content;
-    margin: auto;
-    max-width: 50%;
-}
+dialog {
+    &[open] {
+        background-color: var(--secondary-bg-color);
+        z-index: 100;
+        border-radius: 20px;
+        padding: 30px;
+        display: flex;
+        height: fit-content;
+        cursor: default;
+        box-shadow: var(--box-shadow);
+        outline: none;
+        flex-direction: row;
+        border: none;
+        width: fit-content;
+        margin: auto;
+        max-width: 50%;
 
-dialog[open] .container {
-    display: flex;
-    flex-direction: column;
-    margin-left: 35px;
-    gap: 30px;
-}
+        & .container {
+            display: flex;
+            flex-direction: column;
+            margin-left: 35px;
+            gap: 30px;
 
-dialog[open] .container .divider {
-    width: 100%;
-    height: 10px;
-    text-align: left;
-    font-size: 0.7rem;
-    color: var(--text-color-very-subtle);
-}
+            & .divider {
+                width: 100%;
+                height: 10px;
+                text-align: left;
+                font-size: 0.7rem;
+                color: var(--text-color-very-subtle);
+            }
 
-dialog[open] .container .title {
-    font-size: 1.5rem;
-    text-decoration: underline 2px solid var(--text-color);
-}
+            & .title {
+                font-size: 1.5rem;
+                text-decoration: underline 2px solid var(--text-color);
+            }
 
-dialog[open] .container button {
-    width: fit-content;
-    height: fit-content;
-    background: none;
-    cursor: pointer;
-    outline: none;
-    cursor: pointer;
-    color: var(--text-color);
-    border: none;
-    margin: 0px;
-    margin-top: auto;
-    margin-bottom: auto;
-    transition-duration: var(--hover-duration);
-}
+            & #upgrade-items {
+                display: flex;
+                flex-direction: column;
+                gap: 30px;
 
-dialog[open] .container button:hover {
-    opacity: var(--button-hover-opacity);
-}
+                & button .label {
+                    font-size: 1.2em;
+                }
+            }
 
-dialog[open] .container button .label {
-    text-align: left;
-    pointer-events: none;
-}
+            & button {
+                width: fit-content;
+                height: fit-content;
+                background: none;
+                cursor: pointer;
+                outline: none;
+                cursor: pointer;
+                color: var(--text-color);
+                border: none;
+                margin: 0px;
+                margin-top: auto;
+                margin-bottom: auto;
+                transition-duration: var(--hover-duration);
 
-dialog[open] .container #upgrade-items button .label {
-    font-size: 1.2em;
-}
+                &:hover {
+                    opacity: var(--button-hover-opacity);
+                }
 
-dialog[open] .container button .description {
-    text-align: left;
-    line-height: 1.1rem;
-    font-size: 0.75rem;
-    color: var(--text-color-subtle);
-    pointer-events: none;
-}
+                & .label {
+                    text-align: left;
+                    pointer-events: none;
+                }
 
-dialog[open] .container #upgrade-items {
-    display: flex;
-    flex-direction: column;
-    gap: 30px;
+                & .description {
+                    text-align: left;
+                    line-height: 1.1rem;
+                    font-size: 0.75rem;
+                    color: var(--text-color-subtle);
+                    pointer-events: none;
+                }
+            }
+        }
+    }
 }
 
 #maze {
@@ -238,20 +248,6 @@ dialog[open] .container #upgrade-items {
             background-size: contain;
 
             &[data-detonated=true] {
-                opacity: 0%;
-            }
-        }
-
-        &.jelly {
-            height: 100%;
-            width: 100%;
-            z-index: 0;
-            opacity: 100%;
-            transition-duration: 300ms;
-            background-image: url(images/jelly.png);
-            background-size: contain;
-
-            &[data-eaten=true] {
                 opacity: 0%;
             }
         }
