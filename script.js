@@ -457,12 +457,12 @@ function handleUpgradeDialogContinue(e) {
 function handleUpgradePurchase(e) {
     const upgrade = config.upgrades[e.target.dataset.upgradeId]
 
-    if (global.player.coins < item.price) {
+    if (global.player.coins < upgrade.price) {
         alert("Failed to purchase item because you don't have enough coins.")
         return
     }
 
-    global.player.coins -= item.price
+    global.player.coins -= upgrade.price
     upgrade.buy()
 
     alert("Successfully purchased item!")
@@ -1243,7 +1243,10 @@ function tickEnemyMovement() {
 
         const triedDirections = {}
 
-        while (true) {
+        let triedCounter = -1
+        while (triedCounter < 10) {
+            triedCounter++
+
             newDirection = probabilityMatrix[randomInt(0, probabilityMatrix.length - 1)]
             newRow = enemy.position[0] + newDirection[0]
             newCol = enemy.position[1] + newDirection[1]
@@ -1300,6 +1303,10 @@ function tickEnemyMovement() {
             }
 
             break
+        }
+
+        if (triedCounter == 10) {
+            continue
         }
 
         enemy.lastDirection = newDirection
@@ -1407,7 +1414,7 @@ function endGame(playerWon) {
 
         elements.upgradeDialog.show()
     } else {
-        if (level.score !== 0) {
+        if (global.player.totalScore !== 0) {
             const name = prompt("Your name for the leaderboard. Leave empty if you don't want to save your score.")
             if (name != undefined) {
                 const trimmed = name.trim()
